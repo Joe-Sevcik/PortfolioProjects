@@ -1,0 +1,222 @@
+SELECT * FROM `final-425305.SQLProject.CovidDeaths` 
+WHERE continent is not NULL
+ORDER BY 3,4
+
+SELECT * FROM `final-425305.SQLProject.CovidVaccinations` 
+WHERE continent is not NULL
+ORDER BY 3,4
+
+SELECT location, date, total_cases, new_cases, total_deaths, population 
+FROM `final-425305.SQLProject.CovidDeaths` 
+ORDER BY 1,2
+
+--Looking at Total Cases vs. Total Deaths
+--Shows likelihood of dying if you contract Covid in your country
+
+SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 AS DeathPercentage
+FROM `final-425305.SQLProject.CovidDeaths` 
+WHERE location = "United States" AND
+continent is not NULL
+ORDER BY 1,2
+
+-- Looking at Total Cases vs Population
+-- SHows percentage of population that got Covid
+
+SELECT location, date, population, total_cases, (total_cases/population)*100 AS PercentInfected
+FROM `final-425305.SQLProject.CovidDeaths` 
+WHERE location = "United States"
+ORDER BY 1,2
+
+--Looking at Countries with Highest Infection Rate compared to Population
+
+SELECT location, population, MAX(total_cases) AS HighestInfectionCount, MAX((total_cases/population))*100 AS MaxPercentInfected
+FROM `final-425305.SQLProject.CovidDeaths` 
+--WHERE location = "United States"
+GROUP BY location, population
+ORDER BY MaxPercentInfected desc
+
+-- Showing Countries with Highest Death Count per Population
+
+SELECT location, MAX(cast(total_deaths AS INT64)) AS TotalDeathCount
+FROM `final-425305.SQLProject.CovidDeaths`
+WHERE continent is not NULL 
+--WHERE location = "United States"
+GROUP BY location
+ORDER BY TotalDeathCount desc
+
+--Breakdown By Continent
+
+SELECT continent, MAX(cast(total_deaths AS INT64)) AS TotalDeathCount
+FROM `final-425305.SQLProject.CovidDeaths`
+WHERE continent is not NULL 
+--WHERE location = "United States"
+GROUP BY continent
+ORDER BY TotalDeathCount desc
+
+
+SELECT location, MAX(cast(total_deaths AS INT64)) AS TotalDeathCount
+FROM `final-425305.SQLProject.CovidDeaths`
+--WHERE continent is NULL 
+--WHERE location = "United States"
+GROUP BY location
+ORDER BY TotalDeathCount desc
+
+--Showing continents with highest death count
+
+SELECT continent, MAX(cast(total_deaths AS INT64)) AS TotalDeathCount
+FROM `final-425305.SQLProject.CovidDeaths`
+WHERE continent is not NULL 
+--WHERE location = "United States"
+GROUP BY continent
+ORDER BY TotalDeathCount desc
+
+-- Global Numbers
+
+SELECT SUM(new_cases) as TotalCases, SUM(cast(new_deaths as int64)) AS TotalDeaths, SUM(cast(new_deaths as int64))/SUM(new_cases)*100 as DeathPercentage
+FROM `final-425305.SQLProject.CovidDeaths` 
+WHERE continent is not NULL AND
+new_cases != 0
+--GROUP BY date
+ORDER BY 1,2
+
+--Joining Tables (Total Pop vs Vaccinations)
+
+
+WITH PopvsVac (continent, location, date, population, new_vaccinations, RollingPeopleVaccinated)
+AS
+(
+SELECT DEA.continent, DEA.location, DEA.date, DEA.population, VAC.new_vaccinations
+, SUM(VAC.new_vaccinations) OVER (PARTITION BY DEA.location ORDER BY DEA.location,
+  DEA.date) AS RollingPeopleVaccinated
+FROM `final-425305.SQLProject.CovidDeaths` AS DEA
+JOIN `final-425305.SQLProject.CovidVaccinations` AS VAC
+  ON DEA.location = VAC.location
+  AND DEA.date = VAC.date
+WHERE DEA.continent is not NULL 
+--AND VAC.new_vaccinations is not NULL
+--ORDER BY 2,3
+)
+SELECT * 
+FROM PopvsVac
+
+--USE CTE (Reorganized Query)
+
+WITH PopvsVac AS (
+  SELECT 
+    DEA.continent, 
+    DEA.location, 
+    DEA.date, 
+    DEA.population, 
+    VAC.new_vaccinations,
+    SUM(VAC.new_vaccinations) OVER (PARTITION BY DEA.location ORDER BY DEA.date) AS RollingPeopleVaccinated
+  FROM 
+    `final-425305.SQLProject.CovidDeaths` AS DEA
+  JOIN 
+    `final-425305.SQLProject.CovidVaccinations` AS VAC
+  ON 
+    DEA.location = VAC.location
+    AND DEA.date = VAC.date
+  WHERE 
+    DEA.continent IS NOT NULL
+    --AND VAC.new_vaccinations IS NOT NULL
+)
+SELECT *, (RollingPeopleVaccinated/population)*100 AS VaccinatedPercentage
+FROM PopvsVac;
+
+
+-- Temp Table
+
+CREATE OR REPLACE TABLE final-425305.SQLProject.PercentPopulationVaccinated (
+  continent STRING,
+  location STRING,
+  Date DATE,
+  population INT64,
+  new_vaccinations INT64,
+  RollingPeopleVaccinated INT64
+)
+
+--Checking Table Creation
+
+SELECT *
+FROM final-425305.SQLProject.PercentPopulationVaccinated
+
+--Populating Table
+
+INSERT INTO PercentPopulationVaccinated (continent, location, Date, population, new_vaccinations, RollingPeopleVaccinated)
+SELECT 
+  DEA.continent, 
+  DEA.location, 
+  DEA.date, 
+  DEA.population, 
+  VAC.new_vaccinations,
+  SUM(VAC.new_vaccinations) OVER (PARTITION BY DEA.location ORDER BY DEA.date) AS RollingPeopleVaccinated
+FROM 
+  `final-425305.SQLProject.CovidDeaths` AS DEA
+JOIN 
+  `final-425305.SQLProject.CovidVaccinations` AS VAC
+ON 
+  DEA.location = VAC.location
+  AND DEA.date = VAC.date
+WHERE 
+  DEA.continent IS NOT NULL
+  --AND VAC.new_vaccinations IS NOT NULL;
+
+SELECT *, (RollingPeopleVaccinated / population) * 100 AS VaccinatedPercentage
+FROM PercentPopulationVaccinated;
+
+--View Creation
+
+CREATE VIEW final-425305.SQLProject.View1 AS
+SELECT 
+    DEA.continent, 
+    DEA.location, 
+    DEA.date, 
+    DEA.population, 
+    VAC.new_vaccinations,
+    SUM(VAC.new_vaccinations) OVER (PARTITION BY DEA.location ORDER BY DEA.date) AS RollingPeopleVaccinated
+  FROM 
+    `final-425305.SQLProject.CovidDeaths` AS DEA
+  JOIN 
+    `final-425305.SQLProject.CovidVaccinations` AS VAC
+  ON 
+    DEA.location = VAC.location
+    AND DEA.date = VAC.date
+  WHERE 
+    DEA.continent IS NOT NULL
+
+--View 2
+
+CREATE VIEW final-425305.SQLProject.View2 AS 
+SELECT SUM(new_cases) as TotalCases, 
+  SUM(cast(new_deaths as int64)) AS TotalDeaths, 
+  SUM(cast(new_deaths as int64))/SUM(new_cases)*100 as DeathPercentage
+FROM `final-425305.SQLProject.CovidDeaths` 
+WHERE continent is not NULL AND
+new_cases != 0
+--GROUP BY date
+ORDER BY 1,2
+
+--View 3
+
+CREATE VIEW final-425305.SQLProject.View3 AS 
+SELECT 
+  SUM(new_cases) as TotalCases, 
+  SUM(cast(new_deaths as int64)) AS TotalDeaths, 
+  SUM(cast(new_deaths as int64))/SUM(new_cases)*100 as DeathPercentage
+FROM `final-425305.SQLProject.CovidDeaths` 
+WHERE continent is not NULL AND
+new_cases != 0
+--GROUP BY date
+ORDER BY 1,2
+
+--View 4
+
+CREATE VIEW final-425305.SQLProject.View4 AS 
+SELECT location, 
+  population, 
+  MAX(total_cases) AS HighestInfectionCount, 
+  MAX((total_cases/population))*100 AS MaxPercentInfected
+FROM `final-425305.SQLProject.CovidDeaths` 
+--WHERE location = "United States"
+GROUP BY location, population
+ORDER BY MaxPercentInfected desc
