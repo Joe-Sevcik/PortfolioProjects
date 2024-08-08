@@ -1,0 +1,2904 @@
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+import time
+import sys
+import random
+from playsound import playsound
+from multiprocessing import Process
+# import pygame
+# from pygame.locals import *
+from pygame import mixer
+
+# ****************************************************************************** VARIABLES
+
+# ------------------------------------------ PLAYER VARIABLES
+
+health = 100
+mana = 50
+goblin_slayer_count = 0
+items = ['SWORD','FISTS',]
+new_items = ['RED JEWEL','BLUE JEWEL', 'GREEN JEWEL','GRAPPLING HOOK','GLEAMING SWORD','MYSTERIOUS ORB','COMPASS','CHEESE']
+gleaming_sword_uses = 0
+sword_durability = 0
+points_final = 0
+points_health = 0
+points_mana = 0
+points_goblins = 0
+points_secrets = 0
+
+
+
+# ****************************************************************************** INTRO VARIABLES
+
+mandala_complete = False
+
+
+# ****************************************************************************** ROOM_1 VARIABLES
+
+room_1_monster = 40
+room_1_monster_alive = True
+room_1_flee = False
+room_1_search = False
+
+# ****************************************************************************** ROOM_2 VARIABLES
+
+survived_room_2 = False
+
+# ****************************************************************************** ROOM_3 VARIABLES
+
+room_3_chest_open = False
+room_3_entered = False
+room_3_mimic_health = 30
+room_3_mimic = False
+room_3_safe = False
+room_3_flee = False
+chest_prob = random.randint(1, 2)
+room_3_safe_room = False
+room_3_mimic_room = False
+room_3_search = False
+room_3_cleared = False
+# ****************************************************************************** ROOM 4 VARIABLES
+
+room_4_entered = False
+room_4_cleared = False
+clock_complete = False
+
+# ****************************************************************************** ROOM 5 VARIABLES
+goblin_horde_amount_rm5 = 2
+room_5_entered = False
+room_5_cleared_1 = False
+room_5_flee = False
+room_5_entered_from_1 = False
+rat_complete = False
+
+
+# ****************************************************************************** ROOM 8 VARIABLES
+goblin_horde_amount_rm8 = 3
+goblin_horde_health = 10
+used_contraption = False
+room_8_search = False
+room_8_cleared = False
+room_8_flee_success = False
+
+# ******************************************************************************
+
+def use_compass():
+    global items
+    global new_items
+    if "COMPASS" in items and "COMPASS" not in new_items:
+        print("\nNow that I have my bearings...\n"
+              "Not sure I need this anymore...")
+        time.sleep(1)
+        print()
+        return
+    elif "COMPASS" not in items and "COMPASS" not in new_items:
+        print("\nYou no longer have this item!")
+        time.sleep(1)
+        print()
+        return
+    elif "COMPASS" not in items and "COMPASS" in new_items:
+        items.append("COMPASS")
+        new_items.remove("COMPASS")
+        print("\nOH RIGGGGGHT! The compass! Guess I'll add it to my inventory...")
+        time.sleep(1)
+        print()
+        return items
+
+def no_time():
+    print("\nY'ain't got no time for that!")
+    time.sleep(2)
+    print()
+    return
+
+def check_health(health):
+    print()
+    print("Health: "+str(health))
+    print()
+    return
+
+def check_items(items):
+    print()
+    separator = (", ")
+    print("Inventory: " + separator.join(items))
+    print()
+    return items
+
+def check_mana(mana):
+    print()
+    print("Mana: " + str(mana))
+    print()
+    return mana
+
+def check_goblin_slayer_count(goblin_slayer_count):
+    print("\nGoblins Slain: "+str(goblin_slayer_count))
+    print()
+    return goblin_slayer_count
+
+def return_crossroads():
+    intro_scene()
+
+def check_options():
+    print()
+    print("CONTROLS:\n"
+          "\n"
+          "N = Go North\n"
+          "S = Go South\n"
+          "E = Go East\n"
+          "W = Go West\n"
+          "1 = Check Health\n"
+          "2 = Check Mana\n"
+          "3 = Check Items\n"
+          "4 = Check Slayer Count\n"
+          "8 = Return To Center Chamber (Crossroads)\n"
+          "9 = Search Area\n"
+          "0 = Options\n"
+          "\n"
+          "Use Item: \n"
+          "To use or observe an item, type 'Use (item of choice)'")
+
+# ******************************************************************************
+
+def use_magic_room_2(mana):
+    if mana >= 10:
+        print("\nYou channel your magic")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\charge_magic.wav')
+        print("\nYou cast furious winds and fly back to safety")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\magic_wind.wav')
+        mana_reduction = random.randint(8,13)
+        mana -= mana_reduction
+        print("Mana Remaining: "+str(mana))
+        print()
+        return mana
+    if mana <= 9:
+        print("\nYou dont have enough mana to attempt this spell!\n")
+        return False
+
+def use_magic_room_3(mana,items):
+     # global magic_dmg_rm3
+    # global room_1_monster
+    magic_dmg_rm3 = random.randint(5, 15)
+    if "MYSTERIOUS ORB" in items:
+        remove_item_mo(items)
+        print("\nYou channel your magic")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\charge_magic.wav')
+        print("\nThe Mysterious Orb floats out of your pack and bursts into energy in front of you!")
+        time.sleep(1)
+        print("\nThe Mysterious Orb has provided the mana for your spell!\n")
+        time.sleep(1)
+        print("\nYou cast Thunder Strike!\n")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\lightning.wav')
+        print("Mana Remaining: " + str(mana))
+        return mana
+    if "MYSTERIOUS ORB" not in items:
+        if mana >= 13:
+            print("\nYou channel your magic")
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\charge_magic.wav')
+            print("\nYou cast Thunder Strike!\n")
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\lightning.wav')
+            mana_reduction = random.randint(8, 13)
+            mana -= mana_reduction
+            print("Mana Remaining: " + str(mana))
+            return mana
+        if mana <= 12:
+            print("\nYou dont have enough mana to attempt this spell!\n")
+            return False
+
+
+
+def use_gleaming_sword():
+    if "GLEAMING SWORD" not in items:
+        print("\nYou dont have this item!")
+        time.sleep(1)
+        print()
+        return
+    if "GLEAMING SWORD" in items:
+        print("\nIt GLEAMS! This will REALLY do some goblin slaying!")
+        time.sleep(1)
+        print()
+        return
+
+def gleaming_sword_check():
+    global items
+    global gleaming_sword_uses
+    if gleaming_sword_uses == 3:
+        items.remove("GLEAMING SWORD")
+        print("\nYour Gleaming Sword breaks into a thousand pieces!")
+        time.sleep(1)
+        return
+    if gleaming_sword_uses <=2:
+        time.sleep(3)
+        print("GSC")
+        return
+
+def use_sword():
+    if "SWORD" not in items:
+        print()
+        print("You dont have this item!")
+        time.sleep(1)
+        print()
+        return
+    if "SWORD" in items:
+        print()
+        print("It thirsts... for blood... \n"
+              "goblin blood...")
+        time.sleep(1)
+        print()
+        return
+
+def use_fists():
+    print()
+    print("Great for strangling goblins!")
+    time.sleep(1)
+    print()
+    return
+
+def use_mysterious_orb():
+    if "MYSTERIOUS ORB" in items:
+        print("\nIt has a strange magical presence...")
+        time.sleep(1)
+        print()
+        return
+    if "MYSTERIOUS ORB" not in items and "MYSTERIOUS ORB" in new_items:
+        print("\nYou do not possess this item, but somehow you know it exists...\n")
+        time.sleep(1)
+        return
+    if "MYSTERIOUS ORB" not in items and "MYSTERIOUS ORB" not in new_items:
+        print("\nThis item was used up...")
+        time.sleep(1)
+        print()
+
+def use_red_jewel():
+    if "RED JEWEL" in items:
+        print("\nIt shines... like blood..."
+              "goblin blood...")
+        time.sleep(1)
+        print()
+        return
+    if "RED JEWEL" not in items and "RED JEWEL" in new_items:
+        print("\nYou do not possess this item, but somehow you know it exists...\n")
+        time.sleep(1)
+        return
+    if "RED JEWEL" not in items and "RED JEWEL" not in new_items:
+        print("\nThis item was used up...")
+        time.sleep(1)
+        print()
+
+def use_grappling_hook():
+    if "GRAPPLING HOOK" not in items:
+        print("\nIf only I had one...\n"
+              "bet I could use it to slay a goblin...\n")
+        time.sleep(1)
+        return
+    if "GRAPPLING HOOK" in items:
+        print("\nRope: good for strangling goblins\n"
+              "Pointy edges: good for stabbing goblins\n"
+              "Blunt part: good for beating goblins\n")
+        time.sleep(1)
+        return
+
+def use_health_potion():
+    global health
+    global items
+    if "HEALTH POTION" in items:
+        if health <= 80:
+            items.remove('HEALTH POTION')
+            #remove_hp(items)
+            health = health + 20
+            print("\nYou guzzle the red liquid...")
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\drinking.wav')
+            print()
+            print("\nHealth: " + str(health))
+            time.sleep(1)
+            print()
+            return
+        elif health >= 81:
+            items.remove('HEALTH POTION')
+            # remove_hp(items)
+            health = 100
+            print("\nYou guzzle the red liquid...")
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\drinking.wav')
+            print("\nHealth: "+str(health))
+            time.sleep(1)
+            print()
+            return health
+        elif health == 100:
+            time.sleep(2)
+            print("Your health is full!")
+            time.sleep(1)
+            return
+    elif "HEALTH POTION" not in items:
+        time.sleep(2)
+        print("You don't have one!")
+        time.sleep(1)
+        return
+
+def use_mana_potion():
+    global mana
+    global items
+    if "MANA POTION" in items:
+        if mana >= 36:
+            items.remove('MANA POTION')
+            # remove_hp(items)
+            mana = 50
+            print("\nYou guzzle the blue liquid...")
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\drinking.wav')
+            print("\nMana: " + str(mana))
+            time.sleep(1)
+            print()
+            return
+        elif mana <= 35:
+            items.remove('MANA POTION')
+            # remove_hp(items)
+            mana = mana + 15
+            print("\nYou guzzle the blue liquid...")
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\drinking.wav')
+            print("\nMana: " + str(mana))
+            time.sleep(1)
+            print()
+            return
+        elif health == 50:
+            print("\nYour mana is full!")
+            time.sleep(1)
+            print()
+            return
+    elif "HEALTH POTION" not in items:
+        time.sleep(1)
+        print("\nYou don't have one!")
+        time.sleep(1)
+        print()
+        return
+
+def remove_item_gh(items):
+    items.remove("GRAPPLING HOOK")
+    return items
+
+def remove_item_mo(items):
+    items.remove("MYSTERIOUS ORB")
+    return items
+
+def remove_item_rj(items):
+    items.remove("RED JEWEL")
+    return items
+
+def end_game_death():
+    global health
+    if health <= 0:
+        print()
+        print("Poor little "+name+"...")
+        print()
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\soul_mine.wav')
+        print()
+        print("The Dungeon Has Claimed Your SOUL!")
+        print()
+        time.sleep(1)
+        print("GAME OVER")
+        time.sleep(2)
+        sys.exit()
+    else:
+        return
+
+# ****************************************************************************** ROOM_1_FUNCTIONS
+
+def room_1_monster_health_check():
+    if room_1_monster <= 0:
+        print("You slay the Super Goblin!")
+        room_1_post_battle_1()
+    if room_1_monster >= 1:
+        return
+
+def room_1_flee_success():
+    global room_1_flee
+    room_1_flee = True
+    return room_1_flee
+
+def room_1_battle_1():
+    global items
+    global mana
+    global health
+    global room_1_flee
+    global room_1_monster
+    global magic_dmg
+    global damage_dealt_rm1_sword
+    global damage_dealt_rm1_fists
+    global gleaming_sword_uses
+    directions_1_rm1_b1 = ['flee','grappling hook','use sword','use magic','use gleaming sword','use fists']
+    user_input_1_rm1_b1 = ""
+    while user_input_1_rm1_b1 not in directions_1_rm1_b1:
+        print("Options: Flee, Use Item, Use Magic \n"
+              "What would you like to do?: ")
+        user_input_1_rm1_b1 = input()
+        user_input_1_rm1_b1 = user_input_1_rm1_b1.lower()
+        if user_input_1_rm1_b1 == "flee":
+            flee_super_goblin = str(random.randint(1, 2))
+            print("You attempt to flee the Super Goblin!")
+            time.sleep(1)
+            print("...")
+            time.sleep(1)
+            if flee_super_goblin == "1":
+                print("\nYour attempt is successful!\n\n"
+                      "You return to the previous room.")
+                playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+                room_1_flee_success()
+                intro_scene()
+            elif flee_super_goblin == "2":
+                print("\nYour attempt is unsuccessful...\n\n"
+                      "Prepare yourself!")
+                room_1_battle()
+        if user_input_1_rm1_b1 == "use grappling hook":
+            if items.count("GRAPPLING HOOK") == True:
+                print("\nYou try to swing your grappling hook but the beast is too close!")
+                time.sleep(2)
+                room_1_battle()
+            else:
+                time.sleep(1)
+                print("\nYou don't have this item!\n")
+                return
+        elif user_input_1_rm1_b1 == "use magic":
+            mana = use_magic_room_1(mana,items)
+            magic_dmg_rm1 = random.randint(10, 20)
+            if mana != False:
+                room_1_monster -= magic_dmg_rm1
+                #critical_check()
+                print("Damage Dealt: " + str(magic_dmg_rm1))
+                room_1_monster_health_check()
+                room_1_battle()
+            else:
+                room_1_battle_1()
+        elif user_input_1_rm1_b1 == "use health potion":
+            use_health_potion()
+        elif user_input_1_rm1_b1 == "use mana potion":
+            use_mana_potion()
+        elif user_input_1_rm1_b1 == "1":
+            check_health(health)
+        elif user_input_1_rm1_b1 == "2":
+            check_mana(mana)
+        elif user_input_1_rm1_b1 == "3":
+            check_items(items)
+        elif user_input_1_rm1_b1 == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_1_rm1_b1 == "9":
+            search_area_room_1()
+        elif user_input_1_rm1_b1 == "0":
+            check_options()
+        elif user_input_1_rm1_b1 == "use health potion":
+            use_health_potion()
+        elif user_input_1_rm1_b1 == "use mana potion":
+            use_mana_potion()
+        elif user_input_1_rm1_b1 == "use compass":
+            use_compass()
+
+        elif user_input_1_rm1_b1 == "use fists":
+            damage_dealt_rm1_fists = 3
+            room_1_monster -= (damage_dealt_rm1_fists)
+            print("You swing and scratch at the Gobbo!")
+            print("\nDamage Dealt: " + str(damage_dealt_rm1_fists))
+            room_1_monster_health_check()
+            room_1_battle()
+
+        elif user_input_1_rm1_b1 == "use sword":
+            print("\nYou lash out with your sword!")
+            time.sleep(2)
+            damage_dealt_rm1_sword = random.randint(5, 10)
+            hit = random.randint(1,3)
+            if hit == 1 or hit == 2:
+                room_1_monster -= (damage_dealt_rm1_sword)
+                #critical_check()
+                print("\nDamage Dealt: " + str(damage_dealt_rm1_sword))
+                time.sleep(1)
+                print()
+                room_1_monster_health_check()
+                room_1_battle()
+            if hit == 3:
+                print("\nYou miss!")
+                time.sleep(1)
+                print()
+                room_1_battle()
+
+        elif user_input_1_rm1_b1 == "use gleaming sword":
+            gleaming_sword_uses += 1
+            print("\nYou lash out with your Gleaming Sword!\n\n")
+            time.sleep(2)
+            damage_dealt_rm1_g_sword = 25
+            room_1_monster -= (damage_dealt_rm1_g_sword)
+            gleaming_sword_check()
+            print("Damage Dealt: " + str(damage_dealt_rm1_g_sword))
+            room_1_monster_health_check()
+            room_1_battle()
+
+def room_1_battle():
+    time.sleep(2)
+    global health_dmg
+    global health
+    global room_1_monster
+    print("\nThe Super Goblin swings his club at you!\n")
+    sg_hit_r1b = str(random.randint(1,3))
+    if sg_hit_r1b == "1" or sg_hit_r1b == "2":
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\hit_blood.wav')
+        print("\nThe Super Gobbo smashes you!\n")
+        health_dmg = random.randint(1,20)
+        health -= health_dmg
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\hit_blood.wav')
+        print("\nRemaining Health: "+str(health))
+        print()
+        if health <= 0:
+            end_game_death()
+        if health >= 1:
+            room_1_battle_1()
+    if sg_hit_r1b == "3":
+        print("MISS!\n")
+        time.sleep(1)
+        room_1_battle_1()
+
+def room_1_tied_up():
+    print("\nThe stinking GOOOOBLIN IS DEFENSELESS\n")
+    directions_1_tied_up = ['y', 'n']
+    user_input_1_tied_up = ""
+    while user_input_1_tied_up not in directions_1_tied_up:
+        print("Slay the GOBLIN SCUM? (Y/N): ")
+        user_input_1_tied_up = input()
+        user_input_1_tied_up = user_input_1_tied_up.lower()
+        if user_input_1_tied_up == "y":
+            print("\nYou easily slice the Super Goblin's throat")
+            print()
+            room_1_post_battle_1()
+        if user_input_1_tied_up == "n":
+            print("\nYou hesitate....\n")
+            time.sleep(2)
+            print("\nThen you remember its a dirty GOOOOOOOBLIIIIIIN\n")
+            time.sleep(1)
+            print("You slice the Super Goblin's throat!")
+            print()
+            time.sleep(1)
+            print("That big bastard has to be worth at least 5 goblins!")
+            print("but we'll only count 4 because you hesitated...")
+            time.sleep(2)
+            print("REMEMBER:\n"
+                  "GOBLINS ARE NOT FOR TALKING TO OR BEFRIENDING OR GOING EASY ON!")
+            time.sleep(2)
+            print("THEY ARE FOR SLAAAAAAAAYIIIINGGGG!!!!!")
+            time.sleep(1)
+            room_1_post_battle_2()
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+def room_1_post_battle_1():
+    global room_1_monster_alive
+    global goblin_slayer_count
+    goblin_slayer_count += 5
+    print("\n That big ol' bastard has to be worth at least 5 goblins!")
+    time.sleep(2)
+    print("\nGoblins Slain: " + str(goblin_slayer_count))
+    room_1_monster_alive = False
+    room_1_post_battle_room()
+    return room_1_monster_alive
+
+def room_1_post_battle_2():
+    global room_1_monster_alive
+    global goblin_slayer_count
+    goblin_slayer_count += 4
+    time.sleep(2)
+    print("\nGoblins Slain: " + str(goblin_slayer_count))
+    room_1_monster_alive = False
+    room_1_post_battle_room()
+    return room_1_monster_alive
+
+def search_area_room_1():
+    print()
+    print("You can't search right now! There's an ugly goblin right in front of you! RIPE FOR THE SLAYING!")
+    print()
+    time.sleep(1)
+    return
+
+def use_magic_room_1(mana,items):
+    global magic_dmg_rm1
+    global room_1_monster
+    magic_dmg_rm1 = random.randint(5,15)
+    if "MYSTERIOUS ORB" in items:
+        remove_item_mo(items)
+        print("\nYou channel your magic")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\charge_magic.wav')
+        print("\nThe Mysterious Orb floats out of your pack and bursts into energy in front of you!")
+        time.sleep(1)
+        print("\nThe Mysterious Orb has provided the mana for your spell\n")
+        time.sleep(1)
+        print("\nYou cast Thunder Strike!\n")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\lightning.wav')
+        print("Mana Remaining: " + str(mana))
+        return mana
+    elif "MYSTERIOUS ORB" not in items:
+        if mana >= 13:
+            print("\nYou channel your magic")
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\charge_magic.wav')
+            print("\nYou cast Thunder Strike!")
+            mana_reduction = random.randint(8, 13)
+            mana -= mana_reduction
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\lightning.wav')
+            print("\nMana Remaining: " + str(mana))
+            time.sleep(1)
+            return mana
+        else:
+            print("You dont have enough mana to attempt this spell!")
+            return False
+
+def room_1_rm5_intro():
+    print("You come face to face with a super goblin!")
+    time.sleep(1)
+    room_1_battle()
+
+# ****************************************************************************** ROOM_1 (SUPER GOBLIN)
+
+def room_1():
+    global items
+    global mana
+    global health
+    global room_1_flee
+    global room_1_monster
+    global damage_dealt_super_goblin_1
+    print("You open the door and come to face to ass with a Super Goblin")
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\super_goblin_growl.wav')
+    print("It doesn't seem to notice you.\n")
+    directions_1 = ['use magic','s','use grappling hook','use sword']
+    user_input_1 = ""
+    while user_input_1 not in directions_1:
+        print("Options: South(S), Use Item, Use Magic \n"
+              "What would you like to do?: ")
+        user_input_1 = input()
+        user_input_1 = user_input_1.lower()
+        if user_input_1 == "use grappling hook":
+            global room_1_monster
+            if items.count("GRAPPLING HOOK") == True:
+                damage_dealt_1 = random.randint(1,5)
+                room_1_monster -=damage_dealt_1
+                print("\nYou take out you grappling hook\n"
+                  "and throw it at the creature")
+                time.sleep(1)
+                print("...")
+                time.sleep(1)
+                print("You pull back the hook digs into flesh")
+                time.sleep(1)
+                print("\nThe monster erupts in pain!")
+                #print(str(room_1_monster))
+                playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\monster_howl.mp3')
+                print("\nDamage Dealt: "+str(damage_dealt_1))
+                print("\nThe beast is surprised and disoriented!")
+                directions_1_gh = ['tie', 'flee', 'use magic', 'use sword']
+                print()
+                user_input_1_gh = ""
+                while user_input_1_gh not in directions_1_gh:
+                    print("Options: Attempt to tie-up the Super Goblin with grappling hook (Tie), Flee, Use Item, Use Magic \n"
+                          "What would you like to do?: ")
+                    user_input_1_gh = input()
+                    user_input_1_gh = user_input_1_gh.lower()
+                    if user_input_1_gh == "tie":
+                        print("You attempt to tie up the creature")
+                        time.sleep(1)
+                        print("...")
+                        tie_goblin = str(random.randint(1,1))
+                        time.sleep(1)
+                        #print(str(tie_goblin))
+                        if tie_goblin == "1" or tie_goblin == "4" or tie_goblin == "5":
+                            print("Your attempt has succeeded")
+                            room_1_tied_up()
+                        elif tie_goblin == "2":
+                            print("Your attempt has failed")
+                            room_1_battle()
+                        elif tie_goblin == "3":
+                            print("Your attempt has failed \n"
+                                  "and your grappling hook has been torn apart")
+                            items.remove("GRAPPLING HOOK")
+                            room_1_battle()
+                    if user_input_1_gh == "flee":
+                        flee_super_goblin = str(random.randint(1,2))
+                        print("You attempt to flee the Super Goblin!")
+                        time.sleep(1)
+                        print("...")
+                        time.sleep(1)
+                        if flee_super_goblin == "1":
+                            print("\nYour attempt is successful!\n\n"
+                                  "You return to the previous room.")
+                            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+                            room_1_flee_success()
+                            intro_scene()
+                        elif flee_super_goblin == "2":
+                            print("\nYour attempt is unsuccessful...\n\n"
+                                  "Prepare yourself!")
+                            room_1_battle()
+                    elif user_input_1_gh == "use sword":
+                        print("\nYou lash out with your sword!\n\n")
+                        time.sleep(2)
+                        damage_dealt_super_goblin_gh_1 = random.randint(5,10)
+                        room_1_monster -= (damage_dealt_super_goblin_gh_1)
+                        print("Damage Dealt: "+str(damage_dealt_super_goblin_gh_1))
+                        room_1_battle()
+                    elif user_input_1 == "use magic":
+                        mana = use_magic_room_1(mana, items)
+                        magic_dmg_rm1 = random.randint(10, 20)
+                        if mana != False:
+                            room_1_monster -= magic_dmg_rm1
+                            # critical_check()
+                            print("Damage Dealt: " + str(magic_dmg_rm1))
+                            room_1_monster_health_check()
+                            room_1_battle()
+            else:
+                print()
+                print("You do not have this item")
+                time.sleep(2)
+                print()
+                room_1()
+        elif user_input_1 == "use magic":
+            mana = use_magic_room_1(mana,items)
+            magic_dmg_rm1 = random.randint(10, 20)
+            if mana != False:
+                room_1_monster -= magic_dmg_rm1
+                #critical_check()
+                print("Damage Dealt: " + str(magic_dmg_rm1))
+                room_1_monster_health_check()
+                room_1_battle()
+
+            else:
+                room_1_battle_1()
+
+        elif user_input_1 == "1":
+            check_health(health)
+        elif user_input_1 == "s":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            intro_scene()
+        elif user_input_1 == "2":
+            check_mana(mana)
+        elif user_input_1 == "3":
+            check_items(items)
+        elif user_input_1 == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_1 == "9":
+            search_area_room_1()
+        elif user_input_1 == "0":
+            check_options()
+        elif user_input_1 == "use compass":
+            use_compass()
+        elif user_input_1 == "use sword":
+            print("\nYou lash out with your sword!\n")
+            time.sleep(2)
+            damage_dealt_super_goblin_1 = random.randint(10,20)
+            room_1_monster -= (damage_dealt_super_goblin_1)
+            print("The Super Goblin screams in pain!")
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\monster_howl.mp3')
+            #critical_check()
+            time.sleep(1)
+            print("\nDamage Dealt: "+str(damage_dealt_super_goblin_1))
+            print(str(room_1_monster))
+            if room_1_monster <= 0:
+                time.sleep(1)
+                print("Your surprise attack took him down in one blow!")
+                room_1_post_battle_1()
+            if room_1_monster >= 1:
+                time.sleep(1)
+                room_1_battle()
+        elif user_input_1 == "use fists":
+            print("Here I go strangling again!\n"
+                  "DIEEEEEEE")
+            damage_dealt_super_goblin_1_fists = random.randint(5,10)
+            room_1_monster -= damage_dealt_super_goblin_1_fists
+            time.sleep(1)
+            print("Damage Dealt: "+str(damage_dealt_super_goblin_1_fists))
+            time.sleep(1)
+            print(room_1_monster)
+            room_1_battle()
+        elif user_input_1 == "use red jewel":
+            use_red_jewel()
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+# ****************************************************************************** ROOM_1_CLEARED FUNCTIONS
+
+def search_area_room_1_cleared():
+    global room_1_search
+    global items
+    health_or_mana = random.randint(1,2)
+    if room_1_search == False:
+        if health_or_mana == 1:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+            print()
+            print("You found an item!")
+            print("Health Potion!")
+            time.sleep(1)
+            print()
+            items.append("HEALTH POTION")
+            room_1_search = True
+            return items
+        if health_or_mana == 2:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+            print()
+            print("You found an item!")
+            print("Mana Potion")
+            time.sleep(1)
+            print()
+            items.append("MANA POTION")
+            room_1_search = True
+            return items
+    if room_1_search == True:
+        print()
+        print("Your search is fruitless..")
+        time.sleep(1)
+        print()
+        return items
+
+# ****************************************************************************** ROOM_1_CLEARED
+
+def room_1_post_battle_room():
+    global room_5_cleared_1
+    global room_5_entered_from_1
+    print("\nYou look around...")
+    print("You are in a room with a doors on the east, west and south walls")
+    print("A Super Goblin's corpse lies on the floor...\n")
+    directions_1_pbr = ["s","e"]
+    time.sleep(1)
+    user_input_1_pbr = ""
+    while user_input_1_pbr not in directions_1_pbr:
+        print("Options: South(S) or East(E)\n"
+              "What would you like to do?: ")
+        user_input_1_pbr = input()
+        user_input_1_pbr = user_input_1_pbr.lower()
+        if user_input_1_pbr == "s":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            intro_scene()
+        elif user_input_1_pbr == "e":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            room_5_entered_from_1 = True
+            if room_5_cleared_1 == False:
+                room_5_intro()
+            else:
+                room_5_cleared()
+        elif user_input_1_pbr == "1":
+            check_health(health)
+        elif user_input_1_pbr == "2":
+            check_mana(mana)
+        elif user_input_1_pbr == "3":
+            check_items(items)
+        elif user_input_1_pbr == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_1_pbr == "8":
+            return_crossroads()
+        elif user_input_1_pbr == "9":
+            search_area_room_1_cleared()
+        elif user_input_1_pbr == "0":
+            check_options()
+        elif user_input_1_pbr == "use sword":
+            use_sword()
+        elif user_input_1_pbr == "use fists":
+            use_fists()
+        elif user_input_1_pbr == "use red jewel":
+            use_red_jewel()
+        elif user_input_1_pbr == "use grappling hook":
+            use_grappling_hook()
+        elif user_input_1_pbr == "use health potion":
+            use_health_potion()
+        elif user_input_1_pbr == "use mana potion":
+            use_mana_potion()
+        elif user_input_1_pbr == "use compass":
+            use_compass()
+        elif user_input_1_pbr == "use mysterious orb":
+            use_mysterious_orb()
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+# ****************************************************************************** ROOM 2 FUNCTIONS
+
+
+
+def find_item_room_2():
+    time.sleep(2)
+    if "MYSTERIOUS ORB" not in items and "MYSTERIOUS ORB" in new_items:
+        print("You found an item!\n")
+        print("Mysterious Orb")
+        print()
+        items.append("MYSTERIOUS ORB")
+        new_items.remove("MYSTERIOUS ORB")
+        time.sleep(1)
+    else:
+        return
+
+def room_2_intro():
+    if __name__ == "__main__":
+        akbar()
+
+def play_sound_akbar():
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\admiral_akbar_trap.wav')
+
+def room_2_intro_words():
+    print("As you swing the door open and step into the room...\n"
+          "the floor falls from under you!")
+    time.sleep(2)
+    print("\nYou manage to grab a craggy edge of the pit and stop your descent...\n"
+          "just above the spear tips of the trap...")
+
+def akbar():
+    a = Process(target=play_sound_akbar, args=())
+    b = Process(target=room_2_intro_words, args=())
+    a.start()
+    b.start()
+    a.join()
+    b.join()
+
+# ****************************************************************************** ROOM 2
+
+def room_2():
+    global survived_room_2
+    global mana
+    global health
+    directions_2 = ['climb','use grappling hook']
+    print()
+    user_input_2 = ""
+    while user_input_2 not in directions_2:
+        print("Options: Climb, Use Item, Use Magic\n"
+              "What would you like to do?: ")
+        user_input_2 = input()
+        user_input_2 = user_input_2.lower()
+        if user_input_2 == "use grappling hook":
+            if items.count("GRAPPLING HOOK") == True:
+                #items.remove("GRAPPLING HOOK")
+                print("You take out you grappling hook\n"
+                  "and swing it up through the door and pull back\n")
+                print("...")
+                time.sleep(2)
+                print("\nThe grappling hook finds purchase on the door jam!")
+                time.sleep(1)
+                print("You climb out of the pit...")
+                survived_room_2 = True
+                time.sleep(1)
+                print()
+                find_item_room_2()
+                time.sleep(1)
+                intro_scene()
+            else:
+                print()
+                print("You do not have this item")
+                time.sleep(2)
+                print()
+                room_2()
+        elif user_input_2 == "climb":
+            random_number = random.randint(1,4)
+            print("You attempt to climb out of the pit")
+            print("...")
+            time.sleep(2)
+            if random_number == 1:
+                print("A rock comes loose in your hand and you fall to your death!")
+                health = 0
+                end_game_death()
+            if random_number == 2 or 3 or 4:
+                print("\nYou climb out of the pit...\n")
+                find_item_room_2()
+                survived_room_2 = True
+                time.sleep(1)
+                print()
+                intro_scene()
+        elif user_input_2 == "use magic":
+            mana = use_magic_room_2(mana)
+            if mana != False:
+                # use_magic_room_2(mana)
+                survived_room_2 = True
+                find_item_room_2()
+                print()
+                intro_scene()
+            else:
+                room_2()
+        elif user_input_2 == "1":
+            check_health(health)
+        elif user_input_2 == "2":
+            check_mana(mana)
+        elif user_input_2 == "3":
+            check_items(items)
+        elif user_input_2 == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        # elif user_input_1 == "9":
+            # search_area_intro()
+        elif user_input_2 == "0":
+            check_options()
+        elif user_input_2 == "use compass":
+            no_time()
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+    time.sleep(2)
+
+
+# ****************************************************************************** ROOM 3 FUNCTIONS
+
+def search_area_room_3():
+    global room_3_search
+    global items
+    health_or_mana = random.randint(1, 2)
+    if room_3_search == False:
+        if health_or_mana == 1:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+            print()
+            print("You found an item!")
+            print("Health Potion!")
+            time.sleep(1)
+            print()
+            items.append("HEALTH POTION")
+            room_3_search = True
+            return items
+        if health_or_mana == 2:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+            print()
+            print("You found an item!")
+            print("Mana Potion")
+            time.sleep(1)
+            print()
+            items.append("MANA POTION")
+            room_3_search = True
+            return items
+
+    if room_3_search == True:
+        print()
+        print("Your search is fruitless..")
+        time.sleep(1)
+        print()
+        return
+
+def mimic_health_check():
+    if room_3_mimic_health <= 0:
+        print("You slay the Mimic!")
+        print("\nYou find a Gleaming Sword!")
+        items.append('GLEAMING SWORD')
+        room_3_cleared_mimic()
+    if room_3_mimic_health >= 1:
+        print(str(room_3_mimic_health))
+        return
+
+def room_3_flee_success():
+    global room_3_flee
+    room_3_flee = True
+    return room_3_flee
+
+def room_3_battle_1():
+    global items
+    global mana
+    global health
+    global room_3_mimic_health
+    global gleaming_sword_uses
+    directions_rm3_b1 = ["flee", "use magic", "use sword", "use fists"]
+    time.sleep(1)
+    user_input_rm3_b1 = ""
+    while user_input_rm3_b1 not in directions_rm3_b1:
+        print("\nThe Mimic growls angrily!")
+        time.sleep(1)
+        print("\nOptions: Flee, Use Item, Use Magic \n"
+              "What would you like to do?: ")
+        user_input_rm3_b1 = input()
+        user_input_rm3_b1 = user_input_rm3_b1.lower()
+        if user_input_rm3_b1 == "flee":
+            flee_mimic = str(random.randint(1, 2))
+            print("You attempt to flee the Mimic!")
+            time.sleep(1)
+            print("...")
+            time.sleep(1)
+            if flee_mimic == "1":
+                print("\nYour attempt is successful!\n\n"
+                      "You return to the previous room.")
+                room_3_flee_success()
+                intro_scene()
+            elif flee_mimic == "2":
+                print("\nYour attempt is unsuccessful...\n\n"
+                      "Prepare yourself!")
+                #room_3_battle()
+        if user_input_rm3_b1 == "use grappling hook":
+            if items.count("GRAPPLING HOOK") == True:
+                print("\nYou try to swing your grappling hook but the beast is too close!")
+                time.sleep(2)
+                room_3_battle()
+        elif user_input_rm3_b1 == "use magic":
+            magic_dmg_rm3 = random.randint(10, 20)
+            mana = use_magic_room_3(mana,items)
+            if mana != False:
+                    room_3_mimic_health -= magic_dmg_rm3
+                    #critical_check()
+                    print("Damage Dealt: " + str(magic_dmg_rm3))
+                    mimic_health_check()
+                    room_3_battle()
+            else:
+                room_1_battle_1()
+        elif user_input_rm3_b1 == "use health potion":
+            use_health_potion()
+        elif user_input_rm3_b1 == "use mana potion":
+            use_mana_potion()
+        elif user_input_rm3_b1 == "1":
+            check_health(health)
+        elif user_input_rm3_b1 == "2":
+            check_mana(mana)
+        elif user_input_rm3_b1 == "3":
+            check_items(items)
+        elif user_input_rm3_b1 == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_rm3_b1 == "9":
+            if room_3_safe_room == True:
+                search_area_room_3()
+            if room_3_mimic_room == True:
+                search_area_room_3()
+        elif user_input_rm3_b1 == "0":
+            check_options()
+        elif user_input_rm3_b1 == "use compass":
+            no_time()
+        elif user_input_rm3_b1 == "use sword":
+            hit = random.randint(1,3)
+            print("\nYou lash out with your sword!")
+            time.sleep(2)
+            print()
+            if hit == 1:
+                print("\nMISS!")
+                time.sleep(1)
+                print()
+                room_3_battle()
+            if hit == 3 or hit == 2:
+                damage_dealt_rm3b1_sword = random.randint(5, 10)
+                room_3_mimic_health -= (damage_dealt_rm3b1_sword)
+                #critical_check()
+                print("Damage Dealt: " + str(damage_dealt_rm3b1_sword))
+                mimic_health_check()
+                room_3_battle()
+        elif user_input_rm3_b1 == "use gleaming sword":
+            gleaming_sword_uses += 1
+            print("\nYou lash out with your Gleaming Sword!\n\n")
+            time.sleep(2)
+            damage_dealt_rm3_g_sword = 25
+            room_3_mimic_health -= (damage_dealt_rm3_g_sword)
+            gleaming_sword_check()
+            print("Damage Dealt: " + str(damage_dealt_rm3_g_sword))
+            mimic_health_check()
+            room_3_battle()
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+
+def room_3_battle():
+    global room_3_mimic
+    room_3_mimic = True
+    global health
+    print("\nThe mutant chest tries to chomp you!\n")
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\mimic_chomp.wav')
+    time.sleep(2)
+    dodge_chance = random.randint(1, 3)
+    if dodge_chance == 1:
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\miss_hit.wav')
+        print("\nYou dodge the attack!\n")
+        room_3_battle_1()
+    if dodge_chance == 2 or dodge_chance == 3:
+        mimic_dmg = random.randint(5, 15)
+        health -= mimic_dmg
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\hit_blood.wav')
+        print("\nMimic deals " + str(mimic_dmg) + " Damage!")
+        if health <= 0:
+            end_game_death()
+        if health >= 1:
+            room_3_battle_1()
+
+def room_3_intro():
+    print("\nYou open the door and come face to face...")
+    time.sleep(2)
+    print("\nWith a wooden chest!")
+    time.sleep(1)
+    print("\nThe rest of the room is empty...\n")
+    print("\nIncluding the door you came in (W), There are doors on your left(N) and right(S)\n")
+    time.sleep(2)
+    room_3()
+
+def room_3_chest_mimic():
+    global health
+    dodge_chance = random.randint(1,3)
+    print("\nYou approach the chest and attempt to open it...")
+    time.sleep(1)
+    print("\n...")
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\mimic_chomp.wav')
+    print("\nThe chest morphs and groans! It strikes out!")
+    if dodge_chance == 1 or dodge_chance == 2:
+        print("\nYou dodge the attack!\n")
+        room_3_battle_1()
+    if dodge_chance == 3:
+        mimic_dmg = random.randint(5, 15)
+        health -= mimic_dmg
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\miss_hit.wav')
+        print("\nMimic deals "+str(mimic_dmg)+" Damage!")
+        if health <= 0:
+            end_game_death()
+        if health >= 1:
+            room_3_battle_1()
+
+def room_3_chest_safe():
+    global items
+    global gleaming_sword_uses
+    print("\nYou approach the chest and attempt to open it...")
+    time.sleep(1)
+    print("...")
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\open_chest.mp3')
+    print("It opens with a sharp click!")
+    time.sleep(1)
+    print("You find a Gleaming Sword!")
+    items.append('GLEAMING SWORD')
+    time.sleep(1)
+    # print()
+    gleaming_sword_uses = 0
+
+    room_3_cleared_safe()
+
+# ****************************************************************************** ROOM 3
+
+def room_3():
+    global room_3_chest_open
+    global room_3_entered
+    global items
+    global mana
+    global health
+    global chest_prob
+    global room_3_mimic_health
+    global room_8_flee_success
+    global room_8_cleared
+    global goblin_horde_amount_rm5
+    global room_5_cleared_1
+    #print(str(goblin_horde_amount_rm5))
+    #room_8_cleared = False
+    room_3_entered = True
+    directions_rm3 = ["n", "s", "w", "open chest"]
+    user_input_rm3 = ""
+    while user_input_rm3 not in directions_rm3:
+        print("Options: North(N), South(S), or West(W), Open Chest\n"
+              "What would you like to do?: ")
+        user_input_rm3 = input()
+        user_input_rm3 = user_input_rm3.lower()
+        if user_input_rm3 == "n":
+            #playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            if room_5_cleared_1 == False:
+                room_5_intro()
+            else:
+                room_5_cleared()
+        elif user_input_rm3 == "s":
+            if room_8_cleared == False:
+                room_8_intro()
+            else:
+                room_8_cleared_1()
+        elif user_input_rm3 == "w":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            intro_scene()
+        elif user_input_rm3 == "open chest":
+            room_3_chest_open = True
+            if chest_prob == 1:
+                room_3_chest_mimic()
+            if chest_prob == 2:
+                room_3_chest_safe()
+        elif user_input_rm3 == "1":
+            check_health(health)
+        elif user_input_rm3 == "2":
+            check_mana(mana)
+        elif user_input_rm3 == "3":
+            check_items(items)
+        elif user_input_rm3 == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_rm3 == "8":
+            return_crossroads()
+        elif user_input_rm3 == "9":
+            search_area_room_3()
+        elif user_input_rm3 == "0":
+            check_options()
+        elif user_input_rm3 == "use compass":
+            use_compass()
+        elif user_input_rm3 == "use sword":
+            print("\nYou strike out with your sword !\n")
+            time.sleep(1)
+            if chest_prob == 1:
+                damage_rm3_fists = 5
+                room_3_mimic_health -= damage_rm3_fists
+                time.sleep(1)
+                print("Damage Dealt: " + str(damage_rm3_fists))
+                time.sleep(1)
+                room_3_battle_1()
+            if chest_prob == 2:
+                print("\n...")
+                playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\hit_blood.wav')
+                print("\nYou hurt yourself in your effort!\n")
+                self_dmg = random.randint(1, 5)
+                health -= self_dmg
+                time.sleep(1)
+                print("\nDamage Taken: " + str(self_dmg) + "\n")
+                print("\nRemaining Health: " + str(health) + "")
+                time.sleep(1)
+                room_3()
+        elif user_input_rm3 == "use fists":
+            print("\nYou strike out with your fists!\n")
+            time.sleep(1)
+            if chest_prob == 1:
+                damage_rm3_fists = 5
+                room_3_mimic_health -= damage_rm3_fists
+                time.sleep(1)
+                print("Damage Dealt: " + str(damage_rm3_fists))
+                time.sleep(1)
+                print(str(room_3_mimic_health))
+                room_3_battle_1()
+            if chest_prob == 2:
+                print("\n...")
+                playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\hit_blood.wav')
+                print("\nYou hurt yourself in your effort!\n")
+                self_dmg = random.randint(1,5)
+                health -= self_dmg
+                time.sleep(1)
+                print("\nDamage Taken: "+str(self_dmg)+"\n")
+                print("\nRemaining Health: "+str(health))
+                time.sleep(1)
+                print()
+                room_3()
+        elif user_input_rm3 == "use red jewel":
+            use_red_jewel()
+        elif user_input_rm3 == "use grappling hook":
+            use_grappling_hook()
+        elif user_input_rm3 == "use health potion":
+            use_health_potion()
+        elif user_input_rm3 == "use mana potion":
+            use_mana_potion()
+        elif user_input_rm3 == "use gleaming sword":
+            use_gleaming_sword()
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+
+# ****************************************************************************** ROOM 3 CLEARED
+
+
+def room_3_cleared_safe():
+    global room_3_mimic_room
+    print("\nYou are in a room with an open chest.")
+    time.sleep(2)
+    print()
+    room_3_mimic_room = True
+    room_3_cleared_1()
+
+def room_3_cleared_mimic():
+    global room_3_safe_room
+    print("\nYou are in a room with a dead mimic.")
+    time.sleep(2)
+    print()
+    room_3_safe_room = True
+    room_3_cleared_1()
+
+def room_3_cleared_1():
+    global room_3_chest_open
+    global room_3_entered
+    global items
+    global mana
+    global health
+    global room_3_safe_room
+    global room_3_mimic_room
+    global room_8_cleared
+    global room_8_flee_success
+    global goblin_horde_amount_rm5
+    room_3_entered = True
+    directions_rm3c = ["n","s","w","open chest"]
+    time.sleep(1)
+    user_input_rm3c = ""
+    while user_input_rm3c not in directions_rm3c:
+        print("Options: North(N), South(S), or West(W)\n"
+              "What would you like to do?: ")
+        user_input_rm3c = input()
+        user_input_rm3c = user_input_rm3c.lower()
+        if user_input_rm3c == "n":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            if goblin_horde_amount_rm5 >= 1:
+                room_5_intro()
+            else:
+                room_5_cleared()
+        elif user_input_rm3c == "s":
+            if room_8_cleared == False:
+                room_8_intro()
+            else:
+                room_8_cleared_1()
+        elif user_input_rm3c == "w":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            intro_scene()
+        elif user_input_rm3c == "1":
+            check_health(health)
+        elif user_input_rm3c == "2":
+            check_mana(mana)
+        elif user_input_rm3c == "3":
+            check_items(items)
+        elif user_input_rm3c == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_rm3c == "8":
+            return_crossroads()
+        elif user_input_rm3c == "9":
+            search_area_room_3()
+        elif user_input_rm3c == "0":
+            check_options()
+        elif user_input_rm3c == "use compass":
+            use_compass()
+        elif user_input_rm3c == "use sword":
+            use_sword()
+        elif user_input_rm3c == "use fists":
+            use_fists()
+        elif user_input_rm3c == "use red jewel":
+            use_red_jewel()
+        elif user_input_rm3c == "use grappling hook":
+            use_grappling_hook()
+        elif user_input_rm3c == "use health potion":
+            use_health_potion()
+        elif user_input_rm3c == "use mana potion":
+            use_mana_potion()
+        elif user_input_rm3c == "use gleaming sword":
+            use_gleaming_sword()
+
+# ****************************************************************************** ROOM 4 FUNCTIONS
+
+def room_4_intro():
+    global room_4_entered
+    if room_4_entered == False:
+        print("You open the door and you come step onto a plush rug.\n"
+              "The only door is the one behind you. The rest of the room is lightly lit by a few candles.\n"
+              "In a corner lies a velvet couch, a short table, and a grandfather clock.")
+        room_4()
+    else:
+        room_4()
+
+
+def inspect_clock():
+    global clock_complete
+    global new_items
+    if 'GREEN JEWEL' not in new_items:
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\clock_ding.wav')
+        print("\nIt's ticking away!")
+        room_4()
+    else:
+        print("\nThe clock has an inscription written inside the casing: ")
+        time.sleep(1)
+        print("\n'When are the shadows the shortest?'")
+        time.sleep(1)
+        directions_clock = ["n", "y"]
+        time.sleep(1)
+        user_input_clock = ""
+        while user_input_clock not in directions_clock:
+            print("\nDo you wish to set the clock?: (Y/N)")
+            user_input_clock = input()
+            user_input_clock = user_input_clock.lower()
+            if user_input_clock == "n":
+                time.sleep(1)
+                room_4()
+            if user_input_clock == "y":
+                time.sleep(1)
+                set_clock()
+
+            else:
+                print("Please select an appropriate action or type '0' for controls")
+
+def set_clock():
+    global clock_completed
+    global items
+    directions_set_clock = ["04:20pm"]
+    time.sleep(1)
+    user_input_set_clock = ""
+    while user_input_set_clock not in directions_set_clock:
+        print("What time would you like to set it to?: (Ex. '03:30PM' or '12:15AM')")
+        user_input_set_clock = input()
+        user_input_set_clock = user_input_set_clock.lower()
+        if user_input_set_clock == "12:00pm":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\clock_wind.mp3')
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\clock_ding.wav')
+            print("\nThe clock springs to life!\n"
+                  "A door swings open in the face of the clock and out floats a green crystal\n")
+            room_4_jewel_check()
+            #clock_completed = True
+            room_4()
+        else:
+            random_clock_danger()
+
+def random_clock_danger():
+    global health
+    rcd = random.randint(3,3)
+    if rcd == 1:
+        dmg = random.randint(1,5)
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\clock_wind.mp3')
+        print("\nA secret compartment opens in the wood of the grandfather clock...")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\blowgun_1.wav')
+        print("\nA dart shoots from the compartment and strikes you!")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\hit_blood.wav')
+        print('\nDamage Received: '+str(dmg))
+        time.sleep(2)
+        print()
+        inspect_clock()
+    if rcd == 2:
+        dmg = random.randint(5,10)
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\clock_wind_2.mp3')
+        print("\nA secret compartment opens in the wood of the grandfather clock...")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\flamethrower.wav')
+        print("\nA flame engulfs you!")
+        print('\nDamage Received: '+str(dmg))
+        time.sleep(2)
+        print()
+        inspect_clock()
+    if rcd == 3:
+        dmg = random.randint(5,10)
+        print("\nA piece of paper appears out of a slot in the wood...")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\print.wav')
+        print("It reads: 'TRY AGAIN'")
+        time.sleep(1)
+        print()
+        inspect_clock()
+
+def room_4_jewel_check():
+        if "GREEN JEWEL" in new_items and "GREEN JEWEL" not in items:
+            items.append("GREEN JEWEL")
+            new_items.remove("GREEN JEWEL")
+            print("\nYou found a Green Jewel!")
+            time.sleep(2)
+            print("\nMaybe this fits somewhere...")
+            time.sleep(2)
+            print()
+            return
+
+def search_area_room_4():
+    if "CHEESE" not in items and "CHEESE" in new_items:
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+        print()
+        print("You found an item!")
+        print("Cheese")
+        time.sleep(1)
+        print()
+        items.append("CHEESE")
+        new_items.remove("CHEESE")
+        return items
+    else:
+        print()
+        print("Your search is fruitless..")
+        time.sleep(1)
+        print()
+        return items
+
+# ****************************************************************************** ROOM 4
+
+def room_4():
+    global room_4_entered
+    global clock_complete
+    room_4_entered = True
+    directions = ["e","inspect clock"]
+    time.sleep(1)
+    user_input_rm4 = ""
+    while user_input_rm4 not in directions:
+        print("Options: East(E), Inspect Clock\n"
+              "What would you like to do?: ")
+        user_input_rm4 = input()
+        user_input_rm4 = user_input_rm4.lower()
+        if user_input_rm4 == "e":
+            intro_scene()
+        elif user_input_rm4 == "1":
+            check_health(health)
+        elif user_input_rm4 == "2":
+            check_mana(mana)
+        elif user_input_rm4 == "3":
+            check_items(items)
+        elif user_input_rm4 == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_rm4 == "9":
+            search_area_room_4()
+        elif user_input_rm4 == "0":
+            check_options()
+        elif user_input_rm4 == "inspect clock":
+            inspect_clock()
+        elif user_input_rm4 == "use compass":
+            use_compass()
+        elif user_input_rm4 == "use sword":
+            use_sword()
+        elif user_input_rm4 == "use fists":
+            use_fists()
+        elif user_input_rm4 == "use red jewel":
+            use_red_jewel()
+        elif user_input_rm4 == "use grappling hook":
+            use_grappling_hook()
+        elif user_input_rm4 == "use health potion":
+            use_health_potion()
+        elif user_input_rm4 == "use mana potion":
+            use_mana_potion()
+        elif user_input_rm4 == "use gleaming sword":
+            use_gleaming_sword()
+
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+
+# ****************************************************************************** ROOM 5 FUNCTIONS
+
+
+def room_5_jewel_check():
+    print("battle")
+    if "BLUE JEWEL" in new_items:
+        items.append("BLUE JEWEL")
+        new_items.remove("BLUE JEWEL")
+        print("\nYou found a Blue Jewel!")
+        time.sleep(2)
+        print("\nMaybe this fits somewhere...")
+        time.sleep(2)
+        print()
+        room_5_cleared()
+    else:
+        return
+
+
+
+
+
+def search_area_room_5():
+    print()
+    print("Your search is fruitless..")
+    time.sleep(1)
+    print()
+    return
+
+def room_5_flee_success():
+    global room_5_flee
+    room_5_flee = True
+    return room_5_flee
+
+def rat_killer():
+    global health
+    print("\nYou move to attack the tiny plunderer!")
+    time.sleep(2)
+    print("A mighty voice booms throughout your entire being, freezing you where you stand.")
+    time.sleep(2)
+    print("'How dare you extend a deadly hand towards one of my protected few!")
+    time.sleep(2)
+    print("An unrecognizable pain circulates your mind until all goes black...")
+    time.sleep(2)
+    health = 0
+    end_game_death()
+
+def rat_savior():
+    global room_5_cleared_1
+    print("\nYou pull the chunk of cheese from your pack and offer it to the tiny swashbuckler...")
+    time.sleep(2)
+    print("Before you can even tell they moved, they are back on their gold piece, munching on the cheese...")
+    time.sleep(2)
+    print("The pocket sized pirate let's out a small squeak of a sigh:"
+          "'Argh, thank you much adventurer!\n"
+          "I do believe I have the energy to continue my journey'")
+    time.sleep(3)
+    print("'I will not forget your kindness, let us hope we meet again'")
+    time.sleep(2)
+    print("With a final 'Argh', the mini master of the seas grabbed their coin and\n"
+          "disappeared through a crack in the wall...")
+    time.sleep(3)
+    print("As you look back at the space the pirate was just defending,\n"
+          "you see a hole in the ground and a faint blue light emanating from it")
+    room_5_cleared_1 = True
+    room_5_cleared()
+
+# ****************************************************************************** ROOM 5
+
+def room_5_intro():
+    #playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\goblin_horde_attack.wav')
+    print("\n At first, you think its just an empty room...")
+    time.sleep(1)
+    print("Then a tiny voice pipes up:")
+    time.sleep(1)
+    print("'Avast ye giant! I will never give up my treasure willingly! Arrrrgh!")
+    time.sleep(2)
+    print("You look down and you see a rat with a peg leg, an eyepatch,\nand a tiny stuffed bird on their shoulder.")
+    time.sleep(2)
+    print("They are standing on a single gold coin.")
+    room_5()
+
+def room_5():
+    global items
+    global mana
+    global health
+    global gleaming_sword_uses
+    global room_5_entered_from_1
+    #global goblin_horde_amount_rm5
+    #global goblin_horde_health
+    #print(str(goblin_horde_amount_rm5))
+    #goblin_horde_health = 10
+    directions_goblin_horde_rm5 = ['flee', 'grappling hook', 'use sword', 'use magic']
+    user_input_goblin_horde_rm5 = ""
+    while user_input_goblin_horde_rm5 not in directions_goblin_horde_rm5:
+        print("The rat readies a rapier!"
+              "\nOptions: Flee, Use Item, Use Magic\n"
+              "What would you like to do?: ")
+        user_input_goblin_horde_rm5 = input()
+        user_input_goblin_horde_rm5 = user_input_goblin_horde_rm5.lower()
+        if user_input_goblin_horde_rm5 == "flee":
+            flee_goblin_horde_rm5 = str(random.randint(1, 2))
+            print("You attempt run out the door you came in!")
+
+            if room_5_entered_from_1 == True:
+                room_5_entered_from_1 = False
+                playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+                if room_1_flee == True:
+                    room_1_battle()
+                if room_1_monster_alive == True:
+                    room_1_rm5_intro()
+                elif room_1_monster_alive == False:
+                    room_1_post_battle_room()
+            else:
+                playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+                if room_3_entered == False:
+                    room_3_intro()
+                    room_3()
+                if room_3_entered == True:
+                    if room_3_chest_open == False:
+                        room_3()
+                    if room_3_chest_open == True:
+                        if room_3_mimic == True:
+                            room_3_cleared_mimic()
+                        if room_3_search == True:
+                            room_3_cleared_safe()
+
+        if user_input_goblin_horde_rm5 == "use grappling hook":
+            if items.count("GRAPPLING HOOK") == True:
+                rat_killer()
+            else:
+                time.sleep(1)
+                print("\nYou don't have this item!\n")
+                return
+
+        elif user_input_goblin_horde_rm5 == "use magic":
+            rat_killer()
+
+        elif user_input_goblin_horde_rm5 == "use health potion":
+            use_health_potion()
+        elif user_input_goblin_horde_rm5 == "use mana potion":
+            use_mana_potion()
+        elif user_input_goblin_horde_rm5 == "1":
+            check_health(health)
+        elif user_input_goblin_horde_rm5 == "2":
+            check_mana(mana)
+        elif user_input_goblin_horde_rm5 == "3":
+            check_items(items)
+        elif user_input_goblin_horde_rm5 == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_goblin_horde_rm5 == "9":
+            search_area_room_5()
+        elif user_input_goblin_horde_rm5 == "0":
+            check_options()
+        elif user_input_goblin_horde_rm5 == "use health potion":
+            use_health_potion()
+        elif user_input_goblin_horde_rm5 == "use mana potion":
+            use_mana_potion()
+        elif user_input_goblin_horde_rm5 == "use sword":
+            rat_killer()
+        elif user_input_goblin_horde_rm5 == "use fists":
+            rat_killer()
+        elif user_input_goblin_horde_rm5 == "use cheese":
+            if items.count("CHEESE") == True:
+                rat_savior()
+            else:
+                time.sleep(1)
+                print("\nYou don't have this item!\n")
+                return
+        elif user_input_goblin_horde_rm5 == "use gleaming sword":
+            if items.count("GLEAMING SWORD") == True:
+                rat_killer()
+            else:
+                time.sleep(1)
+                print("\nYou don't have this item!\n")
+                return
+
+
+# ****************************************************************************** ROOM 5 CLEARED
+
+def room_5_cleared():
+    room_5_jewel_check()
+    directions_rm5c = ["s", "w"]
+    print("You are in a room with 2 doors. One to the south, one to the west.")
+    time.sleep(1)
+    print()
+    user_input_rm5c = ""
+    while user_input_rm5c not in directions_rm5c:
+        print("Options: South(S), or West(W)\n"
+              "What would you like to do?: ")
+        user_input_rm5c = input()
+        user_input_rm5c = user_input_rm5c.lower()
+        if user_input_rm5c == "w":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            if room_1_flee == True:
+                room_1_battle()
+            if room_1_monster_alive == True:
+                room_1_rm5_intro()
+            elif room_1_monster_alive == False:
+                room_1_post_battle_room()
+        elif user_input_rm5c == "s":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            if room_3_entered == False:
+                room_3_intro()
+                room_3()
+            if room_3_entered == True:
+                if room_3_chest_open == False:
+                    room_3()
+                if room_3_chest_open == True:
+                    if room_3_mimic == True:
+                        room_3_cleared_mimic()
+                    if room_3_search == True:
+                        room_3_cleared_safe()
+        elif user_input_rm5c == "1":
+            check_health(health)
+        elif user_input_rm5c == "2":
+            check_mana(mana)
+        elif user_input_rm5c == "3":
+            check_items(items)
+        elif user_input_rm5c == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_rm5c == "9":
+            search_area_intro()
+        elif user_input_rm5c == "0":
+            check_options()
+        elif user_input_rm5c == "use compass":
+            use_compass()
+        elif user_input_rm5c == "use sword":
+            use_sword()
+        elif user_input_rm5c == "use fists":
+            use_fists()
+        elif user_input_rm5c == "use red jewel":
+            use_red_jewel()
+        elif user_input_rm5c == "use grappling hook":
+            use_grappling_hook()
+        elif user_input_rm5c == "use health potion":
+            use_health_potion()
+        elif user_input_rm5c == "use mana potion":
+            use_mana_potion()
+        elif user_input_rm5c == "use gleaming sword":
+            use_gleaming_sword()
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+
+# ****************************************************************************** ROOM 8
+
+def use_magic_room_8(mana,items):
+    global magic_dmg_rm1
+    global room_1_monster
+    magic_dmg_rm1 = random.randint(5,15)
+    if "MYSTERIOUS ORB" in items:
+        remove_item_mo(items)
+        print("\nYou channel your magic")
+        time.sleep(2)
+        print("\nThe Mysterious Orb floats out of your pack and bursts into energy in front of you!")
+        time.sleep(1)
+        print("\nThe Mysterious Orb has provided the mana for your spell\n")
+        time.sleep(1)
+        print("\nYou cast Thunder Strike!\n")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\lightning.wav')
+        print("Mana Remaining: " + str(mana))
+        time.sleep(1)
+        print()
+        return mana
+    elif "MYSTERIOUS ORB" not in items:
+        if mana >= 13:
+            print("\nYou channel your magic")
+            time.sleep(2)
+            print("\nYou cast Thunder Strike!")
+            mana_reduction = random.randint(8, 13)
+            mana -= mana_reduction
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\lightning.wav')
+            print("\nMana Remaining: " + str(mana))
+            time.sleep(1)
+            print()
+            return mana
+        else:
+            print("You dont have enough mana to attempt this spell!")
+            return False
+
+def room_8_intro():
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\goblin_horde_attack.wav')
+    print("\nYou come face to face with a goblin horde!")
+    time.sleep(1)
+    room_8()
+
+def room_8():
+    global items
+    global mana
+    global health
+    global gleaming_sword_uses
+    global goblin_horde_amount_rm8
+    global goblin_horde_health
+    global room_8_flee_success
+    global damage_dealt_rm8_fists
+    print("\nGoblins Remaining: " + str(goblin_horde_amount_rm8))
+    time.sleep(1)
+    if goblin_horde_amount_rm8 >= 1:
+
+        directions_goblin_horde = ['flee', 'grappling hook', 'use sword', 'use magic']
+        user_input_goblin_horde = ""
+        while user_input_goblin_horde not in directions_goblin_horde:
+            print("\nOptions: Flee, Use Item, Use Magic \n"
+                  "What would you like to do?: ")
+            user_input_goblin_horde = input()
+            user_input_goblin_horde = user_input_goblin_horde.lower()
+            if user_input_goblin_horde == "flee":
+                flee_goblin_horde = str(random.randint(1, 2))
+                print("You attempt to flee the horde!")
+                time.sleep(1)
+                print("...")
+                time.sleep(1)
+                if flee_goblin_horde == "1":
+                    print("\nYour attempt is successful!\n\n"
+                          "You return to the previous room.")
+                    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+                    room_8_flee_success = True
+                    room_3_cleared_1()
+                elif flee_goblin_horde == "2":
+                    print("\nYour attempt is unsuccessful...\n\n"
+                          "Prepare yourself!")
+                    goblin_horde_battle()
+            if user_input_goblin_horde == "use grappling hook":
+                if items.count("GRAPPLING HOOK") == True:
+                    print("\nYou try to swing your grappling hook but the beast is too close!")
+                    time.sleep(2)
+                    goblin_horde_battle()
+                else:
+                    time.sleep(1)
+                    print("\nYou don't have this item!\n")
+                    return
+            elif user_input_goblin_horde == "use magic":
+                mana = use_magic_room_8(mana, items)
+                magic_dmg_goblin_horde = random.randint(10, 25)
+                if mana != False:
+                    goblin_horde_health -= magic_dmg_goblin_horde
+                    print("\nDamage Dealt: " + str(magic_dmg_goblin_horde))
+                    time.sleep(2)
+                    print()
+                    goblin_horde_health_check()
+                    goblin_horde_battle()
+                else:
+                    room_8()
+            elif user_input_goblin_horde == "use health potion":
+                use_health_potion()
+            elif user_input_goblin_horde == "use mana potion":
+                use_mana_potion()
+            elif user_input_goblin_horde == "1":
+                check_health(health)
+            elif user_input_goblin_horde == "2":
+                check_mana(mana)
+            elif user_input_goblin_horde == "3":
+                check_items(items)
+            elif user_input_goblin_horde == "4":
+                check_goblin_slayer_count(goblin_slayer_count)
+            elif user_input_goblin_horde == "9":
+                return
+            elif user_input_goblin_horde == "0":
+                check_options()
+            elif user_input_goblin_horde == "use health potion":
+                use_health_potion()
+            elif user_input_goblin_horde == "use mana potion":
+                use_mana_potion()
+
+            elif user_input_goblin_horde == "use fists":
+                damage_dealt_rm8_fists = 3
+                goblin_horde_health -= (damage_dealt_rm8_fists)
+                print("You swing and scratch at a Gobbo!")
+                time.sleep(2)
+                print("\nDamage Dealt: " + str(damage_dealt_rm8_fists))
+                time.sleep(2)
+                goblin_horde_health_check()
+                goblin_horde_battle()
+
+            elif user_input_goblin_horde == "use sword":
+                print("\nYou lash out with your sword!")
+                time.sleep(2)
+                damage_dealt_goblin_horde_sword = random.randint(5, 10)
+                hit = random.randint(1, 3)
+                if hit == 1 or hit == 2:
+                    goblin_horde_health -= damage_dealt_goblin_horde_sword
+                    # critical_check()
+                    print("\nDamage Dealt: " + str(damage_dealt_goblin_horde_sword))
+                    time.sleep(1)
+                    goblin_horde_health_check()
+                    #goblin_horde_battle()
+                if hit == 3:
+                    print("\nYou miss!")
+                    time.sleep(1)
+                    print()
+                    goblin_horde_health_check()
+                    goblin_horde_battle()
+                    #goblin_horde_battle()
+
+            elif user_input_goblin_horde == "use gleaming sword":
+                gleaming_sword_uses += 1
+                print("\nYou lash out with your Gleaming Sword!")
+                time.sleep(2)
+                damage_dealt_goblin_horde_g_sword = 30
+                goblin_horde_health -= damage_dealt_goblin_horde_g_sword
+                print("goblins remaining: " + str(goblin_horde_health))
+                gleaming_sword_check()
+                print("\nDamage Dealt: " + str(damage_dealt_goblin_horde_g_sword))
+                goblin_horde_health_check()
+    if goblin_horde_amount_rm8 <= 0:
+        room_8_cleared_1()
+
+def goblin_horde_battle():
+    global health
+    global goblin_horde_amount_rm8
+    global goblin_horde_health
+    ##print("goblins remaining: " + str(goblin_horde_amount_rm8))
+    ##print("goblins remaining: " + str(goblin_horde_health))
+    if goblin_horde_amount_rm8 > 1:
+        print("They all take a strike at you!")
+        goblin_horde_hit = random.randint(0, goblin_horde_amount_rm8)
+        goblin_horde_dmg = (goblin_horde_hit * (random.randint(1, 4)))
+        if goblin_horde_dmg == 0:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\multiple_miss_hit.wav')
+            print("\nFoolish GOOOOBLINS!\n"
+                  "THEY ALL MISSED!")
+            time.sleep(2)
+            print()
+            room_8()
+        if goblin_horde_dmg >= 1:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\hit_blood.wav')
+            print(str(goblin_horde_hit) + " of the green-skinned-scum hit you!")
+            health -= goblin_horde_dmg
+            print("Damage Received: " + str(goblin_horde_dmg))
+            time.sleep(2)
+            room_8()
+    if goblin_horde_amount_rm8 == 1:
+        print("\nThe last gobbo strikes out at you!")
+        goblin_horde_hit = random.randint(0, goblin_horde_amount_rm8)
+        goblin_horde_dmg = (goblin_horde_hit * (random.randint(1, 4)))
+        if goblin_horde_dmg == 0:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\miss_hit.wav')
+            print("\nFoolish GOOOOBLIN!\n"
+                  "IT MISSED!")
+            time.sleep(2)
+            print()
+            room_8()
+        if goblin_horde_dmg >= 1:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\hit_blood.wav')
+            print(" The gobbo hits you!")
+            health -= goblin_horde_dmg
+            print("Damage Received: " + str(goblin_horde_dmg))
+            time.sleep(2)
+            room_8()
+
+    if goblin_horde_amount_rm8 == 1:
+        print("The last remaining goblin strikes at you!")
+        goblin_horde_hit = random.randint(0, goblin_horde_amount)
+        goblin_horde_dmg = (goblin_horde_hit * (random.randint(1, 4)))
+        if goblin_horde_dmg == 0:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\miss_hit.wav')
+            print("\nFoolish GOOOOBLIN!\n"
+                  "IT MISSED!")
+            time.sleep(2)
+            print()
+            room_8()
+        if goblin_horde_dmg >= 1:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\hit_blood.wav')
+            print("The green-skinned-scum hit you!\n")
+            health -= goblin_horde_dmg
+            print("Damage Received: " + str(goblin_horde_dmg))
+            time.sleep(2)
+            room_8()
+        else:
+            room_8_cleared_1()
+    else:
+        room_8_cleared_1()
+
+def goblin_horde_health_check():
+    global goblin_horde_amount_rm8
+    global goblin_horde_health
+    global goblin_slayer_count
+    global room_8_cleared
+    #print("Health Check")
+    #print("goblins remaining: " + str(goblin_horde_amount_rm8))
+    #print("goblin health: " + str(goblin_horde_health))
+    #if goblin_horde_amount_rm8 <= 0:
+    if goblin_horde_health >= 1:
+        goblin_horde_battle()
+    if goblin_horde_health >= -9:
+        goblin_horde_amount_rm8 -= 1
+        goblin_horde_health += 10
+        goblin_slayer_count += 1
+        print("\nYou slay a goblin!")
+        time.sleep(1)
+        print("\nGoblins Slain: " + str(goblin_slayer_count))
+        time.sleep(1)
+        print("goblins remaining: " + str(goblin_horde_amount_rm8))
+        #print("goblin health: " + str(goblin_horde_health))
+        print()
+        if goblin_horde_amount_rm8 <= 0:
+            room_8_cleared = True
+            print("\nThe last goblin collapses to the ground...\n"
+                  "You have slain the HORDE!")
+            time.sleep(1)
+            print()
+            room_8_cleared_1()
+        else:
+            goblin_horde_battle()
+    elif goblin_horde_health >= -19:
+        goblin_horde_amount_rm8 -= 2
+        goblin_slayer_count += 2
+        goblin_horde_health += 20
+        print("\nYou slay 2 goblins at the same time!")
+        time.sleep(1)
+        print("\nGoblins Slain: " + str(goblin_slayer_count))
+        time.sleep(1)
+        print("goblins remaining: " + str(goblin_horde_amount_rm8))
+        print("goblin health: " + str(goblin_horde_health))
+        print()
+        if goblin_horde_amount_rm8 <= 0:
+            room_8_cleared = True
+            print("\nThe last goblin collapses to the ground...\n"
+                  "You have slain the HORDE!")
+            time.sleep(1)
+            print()
+            room_8_cleared_1()
+        else:
+            goblin_horde_battle()
+    elif goblin_horde_health >= -20:
+        goblin_horde_amount_rm8 -= 3
+        goblin_slayer_count += 3
+        time.sleep(1)
+        print("\nYou slay 3 goblins at the same time!")
+        time.sleep(1)
+        print("\nGoblins Slain: " + str(goblin_slayer_count))
+        time.sleep(1)
+        print()
+        print("goblins remaining: " + str(goblin_horde_amount_rm8))
+        print("goblin health: " + str(goblin_horde_health))
+        goblin_horde_health += 30
+        if goblin_horde_amount_rm8 <= 0:
+            room_8_cleared = True
+            print("\nThe last goblin collapses to the ground...\n"
+                  "You have slain the HORDE!")
+            time.sleep(1)
+            print()
+            room_8_cleared_1()
+        else:
+            goblin_horde_battle()
+
+#elif goblin_horde_amount_rm8 == 1:
+    elif goblin_horde_health <= 0:
+        goblin_horde_amount_rm8 -= 1
+        goblin_horde_health = 10
+        goblin_slayer_count += 1
+        print("\nYou slay a goblin!")
+        time.sleep(1)
+        print("\nGoblins Slain: " + str(goblin_slayer_count))
+        time.sleep(1)
+        print()
+        goblin_horde_health = 10
+        if goblin_horde_amount_rm8 <= 0:
+            room_8_cleared = True
+            print("\nThe last goblin collapses to the ground...\n"
+                  "You have slain the HORDE!")
+            time.sleep(1)
+            print()
+            room_8_cleared_1()
+        else:
+            goblin_horde_battle()
+
+# ****************************************************************************** ROOM 8 CLEARED FUNCTIONS
+
+def room_8_jewel_check():
+    if "RED JEWEL" in new_items and "RED JEWEL" not in items:
+        items.append("RED JEWEL")
+        new_items.remove("RED JEWEL")
+        print("\nYou found a Red Jewel!")
+        time.sleep(2)
+        print("\nMaybe this fits somewhere...")
+        time.sleep(2)
+        print()
+        return
+
+    else:
+        return
+
+def use_contraption_m_or_h():
+    global items
+    directions_rm8cc_potion = ["mana", "health"]
+    user_input_rm8cc_potion = ""
+    while user_input_rm8cc_potion not in directions_rm8cc_potion:
+        print("\nOptions: Mana or Health")
+        user_input_rm8cc_potion = input()
+        user_input_rm8cc_potion = user_input_rm8cc_potion.lower()
+        if user_input_rm8cc_potion == "mana":
+            if "MANA POTION" not in items:
+                time.sleep(1)
+                print("\nYou don't have one!")
+                time.sleep(1)
+                print()
+                use_contraption_y_or_n()
+            else:
+                items.remove("MANA POTION")
+                items.append("HEALTH POTION")
+                glass_pour_contraption_mana()
+                room_8_cleared_1()
+        if user_input_rm8cc_potion == "health":
+            if "HEALTH POTION" not in items:
+                time.sleep(1)
+                print("\nYou don't have one!")
+                time.sleep(1)
+                print()
+                use_contraption_y_or_n()
+            else:
+                items.append("MANA POTION")
+                items.remove("HEALTH POTION")
+                glass_pour_contraption_health()
+                room_8_cleared_1()
+
+def use_contraption_y_or_n():
+    directions_rm8cc = ["n","y"]
+    time.sleep(1)
+    user_input_rm8cc = ""
+    while user_input_rm8cc not in directions_rm8cc:
+        print("Would you like to pour a Mana Potion or a Health Potion\n"
+              "into the Contraption?")
+        print("Options: Yes (Y) or No (N)")
+        user_input_rm8cc = input()
+        user_input_rm8cc = user_input_rm8cc.lower()
+        if user_input_rm8cc == "y":
+            time.sleep(1)
+            use_contraption_m_or_h()
+
+        if user_input_rm8cc == "n":
+            time.sleep(1)
+            room_8_cleared_1()
+
+def glass_pour_contraption_mana():
+    b = Process(target=glass_pour, args=())
+    a = Process(target=glass_pour_text_mana, args=())
+    a.start()
+    b.start()
+    a.join()
+    b.join()
+
+def glass_pour_text_mana():
+    print("\nYou pour the potion into the opening above the blue crystal...")
+    time.sleep(3)
+    print("\nThe Contraption begins to whir and hum as the blue liquid swirls through the tubes!")
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\contraption_working.wav')
+    print("\nAs the hum settles, a hidden compartment springs out and there sits a red Health Potion.")
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\clock_wind.mp3')
+    time.sleep(1)
+    print("\nYou replace it with your empty phial and the clockwork arm springs back into place.")
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\clock_wind_2.mp3')
+    time.sleep(1)
+    print()
+    return
+
+
+def glass_pour():
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\pour.wav')
+
+def glass_pour_contraption_health():
+    b = Process(target=glass_pour, args=())
+    a = Process(target=glass_pour_text_health, args=())
+    a.start()
+    b.start()
+    a.join()
+    b.join()
+
+def glass_pour_text_health():
+    print("\nYou pour the potion into the opening above the red crystal...")
+    time.sleep(3)
+    print("\nThe Contraption begins to whir and hum as the red liquid swirls through the tubes!")
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\contraption_working.wav')
+    print("\nAs the hum settles, a hidden compartment springs out and there sits a red Health Potion.")
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\clock_wind.mp3')
+    time.sleep(1)
+    print("\nYou replace it with your empty phial and the clockwork arm springs back into place.")
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\clock_wind_2.mp3')
+    time.sleep(1)
+    print()
+    return
+
+# ****************************************************************************** ROOM 8 CLEARED
+def search_area_room_8_cleared():
+    global room_8_search
+    global items
+    health_or_mana = random.randint(1,2)
+    if room_8_search == False:
+        if health_or_mana == 1:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+            print()
+            print("You found an item!")
+            print("Health Potion!")
+            time.sleep(1)
+            print()
+            items.append("HEALTH POTION")
+            room_8_search = True
+            return items
+        if health_or_mana == 2:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+            print()
+            print("You found an item!")
+            print("Mana Potion")
+            time.sleep(1)
+            print()
+            items.append("MANA POTION")
+            room_8_search = True
+            return items
+    if room_8_search == True:
+        print()
+        print("Your search is fruitless..")
+        time.sleep(1)
+        print()
+        return items
+
+
+def room_8_cleared_1():
+    global used_contraption
+    global goblin_slayer_count
+    global items
+    global room_8_cleared
+    room_8_cleared = True
+    room_8_jewel_check()
+    print("You look around...\n")
+    time.sleep(1)
+    print("Other than the decimated goblins...")
+    print("\nThere is only the door behind you and\n"
+          "A table with some-sort of contraption on top of it.")
+    time.sleep(2)
+    directions_rm8c = ["n","use contraption"]
+    user_input_rm8c = ""
+    while user_input_rm8c not in directions_rm8c:
+        print("\nOptions: North(N), Use Contraption\n"
+              "What would you like to do?: ")
+        user_input_rm8c = input()
+        user_input_rm8c = user_input_rm8c.lower()
+        if user_input_rm8c == "n":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            if room_3_chest_open == True:
+                if room_3_mimic == True:
+                    room_3_cleared_mimic()
+                else:
+                    room_3_cleared_safe()
+            if room_3_chest_open == False:
+                room_3()
+        elif user_input_rm8c == "use contraption":
+            if used_contraption == False:
+                used_contraption = True
+                print("You investigate the device...")
+                time.sleep(1)
+                print("\n...")
+                time.sleep(2)
+                print("\nThe glass and metal-clockwork contraption has 2 openings where\n"
+                      "it appears liquid can be poured in.")
+                time.sleep(2)
+                print("\nA small red jewel and blue jewel are underneath either opening...\n"
+                      "Perhaps this means something...")
+                time.sleep(2)
+                print()
+                if "MANA POTION" not in items and "HEALTH POTION" not in items:
+                    print("You don't think you have the necessary items for this!")
+                    time.sleep(2)
+                    room_8_cleared_1()
+                else:
+                    use_contraption_y_or_n()
+
+            else:
+                if "MANA POTION" not in items and "HEALTH POTION" not in items:
+                    print("\nYou don't have any potions!")
+                    time.sleep(1)
+                    print()
+                    room_8_cleared_1()
+                else:
+                    use_contraption_y_or_n()
+        elif user_input_rm8c == "1":
+            check_health(health)
+        elif user_input_rm8c == "2":
+            check_mana(mana)
+        elif user_input_rm8c == "3":
+            check_items(items)
+        elif user_input_rm8c == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_rm8c == "8":
+            return_crossroads()
+        elif user_input_rm8c == "9":
+            search_area_room_8_cleared()
+        elif user_input_rm8c == "0":
+            check_options()
+        elif user_input_rm8c == "use compass":
+            use_compass()
+        elif user_input_rm8c == "use sword":
+            use_sword()
+        elif user_input_rm8c == "use fists":
+            use_fists()
+        elif user_input_rm8c == "use red jewel":
+            use_red_jewel()
+        elif user_input_rm8c == "use grappling hook":
+            use_grappling_hook()
+        elif user_input_rm8c == "use health potion":
+            use_health_potion()
+        elif user_input_rm8c == "use mana potion":
+            use_mana_potion()
+        elif user_input_rm8c == "use gleaming sword":
+            use_gleaming_sword()
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+
+# ****************************************************************************** INTRO ROOM FUNCTIONS
+
+def search_area_intro():
+    if "GRAPPLING HOOK" not in items and "GRAPPLING HOOK" in new_items:
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+        print()
+        print("You found an item!")
+        print("Grappling Hook")
+        time.sleep(1)
+        print()
+        items.append("GRAPPLING HOOK")
+        new_items.remove("GRAPPLING HOOK")
+        return items
+    else:
+        print()
+        print("Your search is fruitless..")
+        time.sleep(1)
+        print()
+        return items
+
+def jewel_mandala_r():
+    global items
+    if "RED JEWEL" in items:
+        items.remove('RED JEWEL')
+        print("The Red Jewel flies from your pack and lands in a notch in the mandala!")
+        time.sleep(1)
+        print("\nA soft red glow now emanates from the jewel...")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+        print()
+        return
+    else:
+        return
+
+def jewel_mandala_b():
+    global items
+    if "BLUE JEWEL" in items:
+        items.remove('BLUE JEWEL')
+        print("The Blue Jewel flies from your pack and lands in a notch in the mandala!")
+        time.sleep(1)
+        print("\nA soft blue glow now emanates from the jewel...")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+        print()
+        return
+    else:
+        return
+
+def jewel_mandala_g():
+    global items
+    if "GREEN JEWEL" in items:
+        items.remove('GREEN JEWEL')
+        print("The Green Jewel flies from your pack and lands in a notch in the mandala!")
+        time.sleep(1)
+        print("\nA soft green glow now emanates from the jewel...")
+        playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+        print()
+        return
+    else:
+        return
+
+def jewel_mandala_final():
+    global mandala_complete
+    if "RED JEWEL" not in new_items and "BLUE JEWEL" not in new_items and "GREEN JEWEL" not in new_items:
+        mandala_complete = True
+        print("The floor begins to shake!")
+        mandala_opening()
+        intro_scene_mandala_open()
+    else:
+        return
+
+def mandala_open_check():
+    if mandala_complete == True:
+        intro_scene_mandala_open()
+    else:
+        return
+
+def ground_shake():
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\mandala_open.wav')
+def mandala_text():
+    time.sleep(2)
+    print("You look to the center of the room to see the mandala retracting!\n"
+          "From the opening rises a gateway!\n"
+          "Both crystals shoot their colored light at the gateway, activating it.")
+
+def mandala_opening():
+    a = Process(target=ground_shake, args=())
+    b = Process(target=mandala_text, args=())
+    a.start()
+    b.start()
+    a.join()
+    b.join()
+
+
+# ****************************************************************************** INTRO ROOM MANDALA OPEN
+
+def intro_scene_mandala_open():
+    directions_mo = ["n", "s", "e", "w", "approach gate"]
+    print("A swirling gateway sits in the middle of the room.\n")
+    time.sleep(1)
+    user_input_mo = ""
+    while user_input_mo not in directions_mo:
+        print("Options: North(N), South(S), East(E), West(W) or Approach Gate\n"
+              "What would you like to do?: ")
+        user_input_mo = input()
+        user_input_mo = user_input_mo.lower()
+        if user_input_mo == "n":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            if room_1_flee == True:
+                room_1_battle()
+            if room_1_monster_alive == True:
+                room_1()
+            elif room_1_monster_alive == False:
+                room_1_post_battle_room()
+        elif user_input_mo == "s":
+            if survived_room_2 == False:
+                playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+                room_2_intro()
+                time.sleep(2)
+                room_2()
+            if survived_room_2 == True:
+                print("ITS A TRAP!")
+                intro_scene()
+        elif user_input_mo == "e":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            if room_3_entered == False:
+                room_3_intro()
+                room_3()
+            if room_3_entered == True:
+                if room_3_chest_open == False:
+                    room_3()
+                if room_3_chest_open == True:
+                    if room_3_mimic == True:
+                        room_3_cleared_mimic()
+                    if room_3_search == True:
+                        room_3_cleared_safe()
+        elif user_input_mo == "w":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            room_4_intro()
+        elif user_input_mo == "approach gate":
+            gate()
+        elif user_input_mo == "1":
+            check_health(health)
+        elif user_input_mo == "2":
+            check_mana(mana)
+        elif user_input_mo == "3":
+            check_items(items)
+        elif user_input_mo == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input_mo == "9":
+            search_area_intro()
+        elif user_input_mo == "0":
+            check_options()
+        elif user_input_mo == "use compass":
+            use_compass()
+        elif user_input_mo == "use sword":
+            use_sword()
+        elif user_input_mo == "use fists":
+            use_fists()
+        elif user_input_mo == "use grappling hook":
+            use_grappling_hook()
+        elif user_input_mo == "use health potion":
+            use_health_potion()
+        elif user_input_mo == "use mana potion":
+            use_mana_potion()
+        elif user_input_mo == "use gleaming sword":
+            use_gleaming_sword()
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+# ****************************************************************************** GATE
+def gate():
+    mixer.init()
+    mixer.music.load(r'C:\Users\schmo\Desktop\Coding_Sound_Library\gate_music.wav')
+    mixer.music.play(-1)
+    time.sleep(1)
+    print("As you approach the gate a shudder racks your body.\n"
+          "Are you ready to leave this place?")
+    directions_gate = ["n", "y"]
+    time.sleep(1)
+    user_input_gate = ""
+    while user_input_gate not in directions_gate:
+        print("Continue? Yes (Y) or No (N):")
+        user_input_gate = input()
+        user_input_gate = user_input_gate.lower()
+        if user_input_gate == "y":
+            figure_appears()
+        if user_input_gate == "n":
+            print("Perhaps there is more to be done...")
+            intro_scene_mandala_open()
+
+def figure_appears():
+    global health
+    global mana
+    global points_final
+    global points_health
+    global points_mana
+    global points_goblins
+    points_health = (health*10)
+    points_mana = (mana*20)
+    points_goblins = (goblin_slayer_count*50)
+    points_final = (1000+points_health+points_mana+points_goblins)
+    print("As you are about to go through the gate a voice emanates from behind you:\n"
+          "'Hello "+name+"'")
+    time.sleep(3)
+    print("You turn around to see a ghostly cloaked figure.")
+    time.sleep(3)
+    print("The darkness from underneath the figures hood seems to consume any light \n"
+          "that strays close enough to the face of the hooded shade.")
+    time.sleep(4)
+    print("\nThe voice reverberates off the walls of the dungeon room once again, \n"
+          "'I do not think that you know what you have gotten yourself into "+name+"'")
+    time.sleep(5)
+    print("\nAs the last syllable of your name hits your ears you suddenly feel very sleepy\n"
+          "and darkness encroaches on your vision until all is black...")
+    time.sleep(5)
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+    print("\nCONGRATULATIONS "+name+"!")
+    time.sleep(3)
+    print("You have completed Level 1! You will now be awarded points based on your performance.")
+    time.sleep(1)
+    print("\nLevel Completed")
+    time.sleep(1)
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+    print("Points Gained: 1000 Pts")
+    time.sleep(3)
+    print("\nHealth: "+str(health))
+    time.sleep(3)
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+    print("Points Gained: "+str(points_health)+"Pts")
+    time.sleep(1)
+    print("\nMana: "+str(mana))
+    time.sleep(1)
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+    print("Points gained: "+str(points_mana)+" Pts")
+    time.sleep(3)
+
+    print("\nGoblins Slain: "+str(goblin_slayer_count))
+    time.sleep(1)
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+    print("Points gained: "+str(points_goblins)+" Pts")
+    time.sleep(1)
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+    print("\nTotal Points: "+ str(points_final))
+    time.sleep(5)
+    sys.exit()
+
+
+
+
+
+# ****************************************************************************** INTRO ROOM
+def intro_scene():
+    global room_1_flee
+    global room_1_monster_alive
+    global room_3_entered
+    global survived_room_2
+    jewel_mandala_r()
+    jewel_mandala_b()
+    jewel_mandala_g()
+    jewel_mandala_final()
+    mandala_open_check()
+    directions = ["n","s","e","w"]
+    print("You have reached a crossroads...\n")
+    time.sleep(1)
+    user_input = ""
+    while user_input not in directions:
+        print("Options: North(N), South(S), East(E), or West(W)\n"
+              "What would you like to do?: ")
+        user_input = input()
+        user_input = user_input.lower()
+        if user_input == "n":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            if room_1_flee == True:
+                room_1_battle()
+            if room_1_monster_alive == True:
+                room_1()
+            elif room_1_monster_alive == False:
+                room_1_post_battle_room()
+        elif user_input == "s":
+            if survived_room_2 == False:
+                playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+                room_2_intro()
+                time.sleep(2)
+                room_2()
+            if survived_room_2 == True:
+                print("ITS A TRAP!")
+                intro_scene()
+        elif user_input == "e":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            if room_3_entered == False:
+                room_3_intro()
+                room_3()
+            if room_3_entered == True:
+                if room_3_chest_open == False:
+                    room_3()
+                if room_3_chest_open == True:
+                    if room_3_mimic == True:
+                        room_3_cleared_mimic()
+                    if room_3_search == True:
+                        room_3_cleared_safe()
+        elif user_input == "w":
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\door_open.mp3')
+            room_4_intro()
+        elif user_input == "1":
+            check_health(health)
+        elif user_input == "2":
+            check_mana(mana)
+        elif user_input == "3":
+            check_items(items)
+        elif user_input == "4":
+            check_goblin_slayer_count(goblin_slayer_count)
+        elif user_input == "9":
+            search_area_intro()
+        elif user_input == "0":
+            check_options()
+        elif user_input == "use compass":
+            use_compass()
+        elif user_input == "use sword":
+            use_sword()
+        elif user_input == "use fists":
+            use_fists()
+        elif user_input == "use red jewel":
+            use_red_jewel()
+        elif user_input == "use grappling hook":
+            use_grappling_hook()
+        elif user_input == "use health potion":
+            use_health_potion()
+        elif user_input == "use mana potion":
+            use_mana_potion()
+        elif user_input == "use gleaming sword":
+            use_gleaming_sword()
+        else:
+            print("Please select an appropriate action or type '0' for controls")
+
+
+
+    # time.sleep(2)
+
+# ****************************************************************************** START FUNCTIONS
+
+def intro_text():
+    mixer.init()
+    mixer.music.load(r'C:\Users\schmo\Desktop\Coding_Sound_Library\intro_forest.wav')
+    mixer.music.play(-1)
+    string = ("One day, the call of adventure reaches your ears.\n"
+          "You gather your late-father's adventuring gear \n"
+          "and head into The Magic Forest...")
+    for char in string:
+        print(char, end='')
+        time.sleep(.05)
+    print()
+
+    time.sleep(3)
+    string_1 = ("As you make your way through the forest you come across a large open glade.")
+    for char in string_1:
+        print(char, end='')
+        time.sleep(.05)
+    print()
+    time.sleep(2)
+    string_2 = ("In the middle of the glade you find an armored knight.")
+    for char in string_2:
+        print(char, end='')
+        time.sleep(.05)
+    time.sleep(2)
+    string_3 = (" Their steel armor gleams almost white in the sunshine,"
+          "\nwhile a shock of red extends from the back crest of their helmet.")
+    for char in string_3:
+        print(char, end='')
+        time.sleep(.05)
+    print()
+    time.sleep(4)
+    string_4 = ("As you approach, they turn to you\n"
+          "and you notice a lining of exquisite fur along the collar, "
+          "and a human sized hole at their feet.")
+    for char in string_4:
+        print(char, end='')
+        time.sleep(.05)
+    print()
+    time.sleep(4)
+    string_5 = ("You now stand in front of each other.")
+    for char in string_5:
+        print(char, end='')
+        time.sleep(.05)
+    print()
+    time.sleep(2)
+    print("\nA long moment passes...")
+    time.sleep(5)
+    print("\nA voice finally comes from the helm: ")
+    time.sleep(2)
+    print()
+    print("What's your name?")
+    return
+
+def fanfare():
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\fanfare.mp3')
+    return
+
+def intro_fanfare():
+    b = Process(target=fanfare, args=())
+    a = Process(target=intro_text, args=())
+    a.start()
+    b.start()
+    a.join()
+    b.join()
+
+def begin_adventure():
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+    print("\nHealth: " + str(health))
+    print("Mana: " + str(mana))
+    time.sleep(3)
+    separator = ", "
+    print("Goblins Slain: " + str(goblin_slayer_count))
+    print("Inventory: " + separator.join(items))
+    print("Enter '0' for Options/Instructions")
+    time.sleep(3)
+
+    print("\nThe Knight yells: Good luck Slayer " + name + "!" + "\nAs you plunge through the dark hole!")
+    time.sleep(2)
+    print("\nYou come down in a crash of armor and stone!")
+    time.sleep(2)
+
+    # playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\get_rdy.wav')
+    mixer.init()
+    mixer.music.load(r'C:\Users\schmo\Desktop\Coding_Sound_Library\chip_tune-2.wav')
+    mixer.music.play(-1)
+    time.sleep(1)
+    print("\nYou look around the dungeon room to try to get your bearings\n"
+          "you pull out your compass and head to the center of the room.")
+    print()
+    time.sleep(3)
+    print("You find yourself in a stone room with 4 wooden doors.")
+    time.sleep(2)
+    print("\nYou look down and see an intricate mandala with 2 slots carved out of the stone")
+    time.sleep(2)
+    print("\nMaybe something fits in these...")
+    time.sleep(2)
+    print()
+    intro_scene()
+
+def bunny_slippers():
+    global health
+    health = 0
+    end_game_death()
+
+
+
+
+
+
+# ****************************************************************************** START
+
+if __name__ == '__main__':
+    global adventure_y_n
+    playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+    intro_text()
+    while True:
+
+        name = None
+        while not name:
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\whats_ur_name.wav')
+            name = input(": ").capitalize()
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\success.wav')
+            playsound(r'C:\Users\schmo\Desktop\Coding_Sound_Library\goblin_intro_vocal.wav')
+            adventure_y_n = input("You stare back at the dark shadow within the helmet.\n"
+                                  "You feel as if your destiny is being decided in this moment.\n"
+                                  "Go back to your quiet life and warm bunny slippers?  (N)\n"
+                                  "Embrace a life of adventure and jump down this stranger's hole? (Y)"
+                                  ": ").capitalize()
+            if adventure_y_n == "Y":
+                begin_adventure()
+            if adventure_y_n == "N":
+                print("\nGo enjoy your bunny slippers coward...")
+                time.sleep(2)
+                sys.exit()
+
+
+            break
